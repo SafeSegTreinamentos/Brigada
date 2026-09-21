@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gerador de Organograma — Brigada de Incêndio NPT-017</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --amber:#F59E0B;
+  --amber-dark:#B45309;
+  --graphite:#14171B;
+  --graphite-2:#1E2228;
+  --graphite-3:#272C33;
+  --line:#343A42;
+  --ink:#F4F5F6;
+  --ink-dim:#A7ADB5;
+  --danger:#E4574C;
+  --ok:#4CAF7D;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+html,body{height:100%;}
+body{
+  margin:0;
+  background:var(--graphite);
+  color:var(--ink);
+  font-family:'Inter',sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.display{
+  font-family:'Bebas Neue',sans-serif;
+  letter-spacing:.03em;
+  font-weight:400;
+}
+.hazard{
+  height:8px;
+  background:repeating-linear-gradient(135deg,var(--amber) 0 14px,var(--graphite-2) 14px 28px);
+}
+header.top{
+  padding:22px 20px 18px;
+  border-bottom:1px solid var(--line);
+}
+header.top .eyebrow{
+  color:var(--amber);
+  font-size:13px;
+  font-weight:700;
+  margin:0 0 4px;
+}
+header.top h1{
+  font-size:28px;
+  margin:0 0 6px;
+  line-height:1;
+}
+header.top p{
+  margin:0;
+  color:var(--ink-dim);
+  font-size:13.5px;
+  max-width:64ch;
+  line-height:1.5;
+}
+main{
+  padding:18px 16px 90px;
+  max-width:1080px;
+  margin:0 auto;
+}
+.tabs{
+  display:flex;
+  gap:6px;
+  margin:18px 0 14px;
+  overflow-x:auto;
+  padding-bottom:2px;
+}
+.tab-btn{
+  flex:0 0 auto;
+  background:var(--graphite-2);
+  border:1px solid var(--line);
+  color:var(--ink-dim);
+  padding:9px 13px;
+  border-radius:8px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.tab-btn.active{
+  background:var(--amber);
+  border-color:var(--amber);
+  color:var(--graphite);
+}
+section.panel{display:none;}
+section.panel.active{display:block;}
+
+.card{
+  background:var(--graphite-2);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:16px;
+  margin-bottom:14px;
+}
+.card h2{
+  font-size:20px;
+  margin:0 0 10px;
+  color:var(--amber);
+}
+.card h3{
+  font-size:16px;
+  margin:0 0 8px;
+  font-family:'Inter',sans-serif;
+  font-weight:700;
+}
+.hint{
+  color:var(--ink-dim);
+  font-size:12.5px;
+  line-height:1.5;
+  margin:0 0 12px;
+}
+label{
+  display:block;
+  font-size:12px;
+  font-weight:600;
+  color:var(--ink-dim);
+  margin:0 0 4px;
+}
+input[type=text],input[type=date],select,textarea{
+  width:100%;
+  background:var(--graphite-3);
+  border:1px solid var(--line);
+  color:var(--ink);
+  padding:10px 11px;
+  border-radius:7px;
+  font-size:14.5px;
+  font-family:inherit;
+}
+textarea{min-height:90px;resize:vertical;}
+.row{
+  display:flex;
+  gap:10px;
+  margin-bottom:10px;
+  flex-wrap:wrap;
+}
+.row > div{flex:1 1 160px;}
+.checkrow{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:10px;
+}
+.checkrow input{width:auto;}
+.checkrow label{margin:0;color:var(--ink);font-size:14px;font-weight:500;}
+button{
+  font-family:inherit;
+  cursor:pointer;
+  border-radius:7px;
+  border:1px solid transparent;
+  font-weight:700;
+  font-size:13.5px;
+  padding:10px 16px;
+}
+.btn-amber{background:var(--amber);color:var(--graphite);}
+.btn-ghost{background:transparent;border-color:var(--line);color:var(--ink);}
+.btn-danger{background:transparent;border-color:var(--danger);color:var(--danger);}
+.btn-sm{padding:6px 10px;font-size:12px;}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+
+.setor-card{
+  border:1px solid var(--line);
+  border-radius:9px;
+  padding:13px;
+  margin-bottom:12px;
+  background:var(--graphite-3);
+}
+.setor-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+  margin-bottom:10px;
+}
+.setor-head .tag{
+  display:inline-block;
+  background:var(--amber);
+  color:var(--graphite);
+  font-size:10.5px;
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  padding:2px 7px;
+  border-radius:5px;
+  margin-bottom:4px;
+}
+.setor-name-input{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:.02em;padding:6px 9px;}
+.brig-list{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;}
+.brig-item{
+  background:var(--graphite-2);
+  border:1px solid var(--line);
+  border-radius:7px;
+  padding:10px;
+  margin-bottom:8px;
+}
+.brig-item .row{margin-bottom:8px;}
+.comp-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px 10px;
+  margin:8px 0 4px;
+}
+.comp-chip{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:12px;
+  color:var(--ink-dim);
+}
+.comp-chip input{width:auto;}
+.comp-chip.checked{color:var(--amber);font-weight:600;}
+.empty{
+  text-align:center;
+  color:var(--ink-dim);
+  font-size:13.5px;
+  padding:26px 10px;
+  border:1px dashed var(--line);
+  border-radius:9px;
+}
+.status-tag{
+  display:inline-block;
+  font-size:10.5px;
+  font-weight:800;
+  padding:1px 6px;
+  border-radius:4px;
+  margin-left:6px;
+  vertical-align:middle;
+}
+.status-ativo{background:rgba(76,175,125,.18);color:var(--ok);}
+.status-afastamento{background:rgba(228,87,76,.18);color:var(--danger);}
+
+/* Organograma */
+.org-wrap{
+  overflow-x:auto;
+  padding:20px 10px 10px;
+}
+.org-tree{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  min-width:max-content;
+}
+.org-node{
+  background:var(--graphite-3);
+  border:1.5px solid var(--amber);
+  border-radius:8px;
+  padding:8px 14px;
+  text-align:center;
+  min-width:150px;
+  position:relative;
+}
+.org-node .role{
+  font-size:10px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--amber);
+  font-weight:800;
+  display:block;
+  margin-bottom:2px;
+}
+.org-node .name{font-size:14px;font-weight:600;}
+.org-node.dim{border-color:var(--line);}
+.org-node.dim .role{color:var(--ink-dim);}
+.org-row{
+  display:flex;
+  gap:26px;
+  position:relative;
+  padding-top:22px;
+}
+.org-row::before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:calc(150px/2 + 13px);
+  right:calc(150px/2 + 13px);
+  height:2px;
+  background:var(--line);
+}
+.org-row.single::before{display:none;}
+.org-row.wrap{flex-wrap:wrap;justify-content:center;max-width:1600px;}
+.org-row.wrap::before{display:none;}
+.org-col{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  position:relative;
+}
+.org-col::after{
+  content:"";
+  position:absolute;
+  top:-22px;
+  left:50%;
+  width:2px;
+  height:22px;
+  background:var(--line);
+}
+.org-brig-list{
+  margin-top:10px;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  align-items:center;
+}
+.org-brig{
+  font-size:11.5px;
+  background:var(--graphite);
+  border:1px solid var(--line);
+  border-radius:5px;
+  padding:4px 9px;
+  color:var(--ink-dim);
+  white-space:nowrap;
+}
+.org-brig .badge{color:var(--amber);font-weight:700;}
+.org-count{
+  font-size:11px;
+  color:var(--ink-dim);
+  margin-top:6px;
+}
+
+/* complementary report */
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+th,td{
+  text-align:left;
+  padding:7px 8px;
+  border-bottom:1px solid var(--line);
+}
+th{color:var(--amber);font-size:11px;text-transform:uppercase;letter-spacing:.03em;}
+.mod-block{margin-bottom:18px;}
+.mod-block h3{color:var(--amber);}
+.mod-block .count{color:var(--ink-dim);font-weight:400;font-size:13px;}
+.pill{
+  display:inline-block;
+  background:var(--graphite-3);
+  border:1px solid var(--line);
+  border-radius:5px;
+  padding:2px 8px;
+  font-size:12px;
+  margin:2px 4px 2px 0;
+}
+
+/* controle table */
+.controle-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:flex-end;}
+.controle-toolbar > div{flex:1 1 150px;}
+.filter-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--graphite-3);border:1px solid var(--line);
+  border-radius:6px;padding:6px 10px;font-size:12.5px;cursor:pointer;
+  color:var(--ink-dim);
+}
+.filter-chip.active{border-color:var(--amber);color:var(--amber);background:rgba(245,158,11,.12);}
+.filter-chip input{display:none;}
+.table-wrap{overflow-x:auto;}
+.controle-table select,.controle-table input[type=text]{font-size:12.5px;padding:6px 7px;min-width:110px;}
+.controle-table td{vertical-align:middle;}
+.comp-cell{display:flex;gap:3px;flex-wrap:wrap;}
+.comp-cell button{
+  padding:3px 6px;font-size:10.5px;border-radius:4px;font-weight:800;
+  background:var(--graphite-3);border:1px solid var(--line);color:var(--ink-dim);
+}
+.comp-cell button.on{background:var(--amber);border-color:var(--amber);color:var(--graphite);}
+
+.setor-check-list{
+  max-height:260px;
+  overflow-y:auto;
+  border:1px solid var(--line);
+  border-radius:7px;
+  padding:8px;
+  margin-top:8px;
+  background:var(--graphite-3);
+}
+.setor-check-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 4px;
+  border-bottom:1px solid var(--line);
+  font-size:13px;
+}
+.setor-check-row:last-child{border-bottom:none;}
+.setor-check-row input{width:auto;flex:0 0 auto;}
+.setor-check-row .scr-name{font-weight:600;}
+.setor-check-row .scr-sup{color:var(--ink-dim);font-size:11.5px;display:block;}
+.setor-check-row.taken .scr-name::after{
+  content:" (outro chefe)";
+  color:var(--ink-dim);
+  font-weight:400;
+  font-size:11px;
+}
+.picker-row{
+  display:flex;
+  gap:8px;
+  margin-top:8px;
+  flex-wrap:wrap;
+}
+.picker-row input{flex:1 1 200px;}
+
+.floatbar{
+  position:fixed;
+  bottom:0;left:0;right:0;
+  background:var(--graphite-2);
+  border-top:1px solid var(--line);
+  padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));
+  display:flex;
+  gap:8px;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+.savedmsg{
+  font-size:11.5px;
+  color:var(--ok);
+  text-align:center;
+  margin-top:6px;
+  min-height:14px;
+}
+
+@media (max-width:520px){
+  header.top h1{font-size:23px;}
+  .row > div{flex:1 1 100%;}
+  .comp-grid{grid-template-columns:1fr;}
+}
+
+@media print{
+  header.top,.tabs,.floatbar,.no-print,.card > .actions,.setor-head button,.brig-item button,.controle-toolbar,.controle-table select,.controle-table button{display:none !important;}
+  body{background:#fff;color:#111;}
+  section.panel{display:none !important;}
+  section.panel.print-target{display:block !important;page-break-before:always;}
+  section.panel.print-target:first-of-type{page-break-before:auto;}
+  .card{background:#fff;border-color:#ccc;}
+  .org-node{background:#fff;border-color:#B45309;color:#111;}
+  .org-node .role{color:#B45309;}
+  .org-brig{background:#f5f5f5;color:#111;border-color:#ccc;}
+  .org-brig .badge{color:#B45309;}
+  main{padding-bottom:20px;}
+  table{color:#111;}
+  th{color:#B45309;}
+  .controle-table input[type=text]{border:none;background:none;color:#111;padding:0;}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <p class="eyebrow">SAFESEG · NPT-017/PR</p>
+  <h1>Gerador de Organograma da Brigada de Incêndio</h1>
+  <p>Monte o organograma funcional (chefe da brigada, chefes de turno, líderes de setor e brigadistas), conforme item 10.2 da NPT-017, e separe os brigadistas por curso especialista: resgate em altura, espaço confinado, produtos químicos e sistema de comando.</p>
+</header>
+
+<div class="hazard"></div>
+
+<main>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="setup">1 · Estrutura</button>
+    <button class="tab-btn" data-tab="setores">2 · Setores e brigadistas</button>
+    <button class="tab-btn" data-tab="controle">3 · Controle de brigadistas</button>
+    <button class="tab-btn" data-tab="organograma">4 · Organograma</button>
+    <button class="tab-btn" data-tab="complementar">5 · Cursos especialistas</button>
+  </div>
+
+  <!-- TAB 1: SETUP -->
+  <section class="panel active" id="tab-setup">
+    <div class="card">
+      <h2>Carregar dados da planilha</h2>
+      <p class="hint">Os brigadistas da planilha que você enviou já estão prontos para carregar (204 pessoas, agrupadas por turno e setor conforme a planilha). Isso cria os turnos e setores automaticamente — os campos de chefe da brigada, chefe de cada turno e líder de cada setor ficam em branco para você preencher.</p>
+      <div class="actions"><button class="btn-amber" id="loadPresetBtn">⇩ Carregar os 204 brigadistas da planilha</button></div>
+    </div>
+
+    <div class="card">
+      <h2>Chefe da brigada (coordenador geral)</h2>
+      <p class="hint">Responsável pela coordenação de todas as edificações/turnos da planta (item 10.2.1-d).</p>
+      <div class="checkrow">
+        <input type="checkbox" id="coordEnabled">
+        <label for="coordEnabled">Esta planta tem chefe da brigada / coordenador geral</label>
+      </div>
+      <div id="coordNameWrap" style="display:none">
+        <label for="coordNome">Nome do chefe da brigada</label>
+        <input type="text" id="coordNome" placeholder="Ex.: Deverson Pomerenk">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Turnos / edificações</h2>
+      <p class="hint">Cada turno tem seu próprio chefe (item 10.2.1-c). Os setores do próximo passo são vinculados a um destes turnos.</p>
+      <div id="gruposList"></div>
+      <div class="row" style="margin-top:10px">
+        <div><label for="grupoNomeInput">Nome do turno/edificação</label><input type="text" id="grupoNomeInput" placeholder="Ex.: 1º Turno"></div>
+        <div><label for="grupoChefeInput">Nome do chefe</label><input type="text" id="grupoChefeInput" placeholder="Ex.: Nome do chefe"></div>
+      </div>
+      <div class="actions">
+        <button class="btn-amber" id="addGrupoBtn">+ Adicionar turno/edificação</button>
+        <button class="btn-ghost btn-sm" id="preset3TurnosBtn">⏱ Predefinir 3 turnos (Manhã / Tarde / Noite)</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 2: SETORES -->
+  <section class="panel" id="tab-setores">
+    <div class="card">
+      <h2>Adicionar setores</h2>
+      <p class="hint">Digite os setores/pavimentos/compartimentos da planta (item 10.2.2). Um por vez ou colando uma lista (um por linha). Se já carregou a planilha, os setores dela já aparecem abaixo.</p>
+      <div class="row">
+        <div><label for="setorNomeInput">Nome do setor</label><input type="text" id="setorNomeInput" placeholder="Ex.: Almoxarifado"></div>
+        <div id="setorGrupoWrap" style="display:none"><label for="setorGrupoInput">Turno/edificação</label><select id="setorGrupoInput"></select></div>
+      </div>
+      <div class="checkrow" id="applyAllShiftsWrap" style="display:none">
+        <input type="checkbox" id="applyAllShiftsChk">
+        <label for="applyAllShiftsChk">Criar este setor em todos os turnos/edificações cadastrados</label>
+      </div>
+      <div class="actions"><button class="btn-amber" id="addSetorBtn">+ Adicionar setor</button></div>
+      <details style="margin-top:12px">
+        <summary style="cursor:pointer;color:var(--ink-dim);font-size:13px">Colar vários setores de uma vez</summary>
+        <div style="margin-top:10px">
+          <textarea id="bulkSetores" placeholder="Um setor por linha"></textarea>
+          <div class="actions"><button class="btn-ghost" id="bulkAddBtn">Adicionar todos</button></div>
+        </div>
+      </details>
+    </div>
+
+    <div id="setoresList"></div>
+  </section>
+
+  <!-- TAB 3: CONTROLE -->
+  <section class="panel" id="tab-controle">
+    <div class="card">
+      <h2>Controle de brigadistas</h2>
+      <p class="hint">Lista única com todos os brigadistas cadastrados. Use os seletores de setor para mudar alguém de posição (turno/setor), e os botões de curso para marcar quem é especialista em cada resgate. Filtre por curso para ver só quem pode atuar naquela frente.</p>
+      <div class="controle-toolbar">
+        <div><label for="ctlSearch">Buscar por nome</label><input type="text" id="ctlSearch" placeholder="Digite um nome..."></div>
+      </div>
+      <div class="actions" id="ctlFilters" style="margin-top:0"></div>
+    </div>
+    <div class="card table-wrap">
+      <table class="controle-table" id="ctlTable"></table>
+    </div>
+  </section>
+
+  <!-- TAB 4: ORGANOGRAMA -->
+  <section class="panel" id="tab-organograma">
+    <div class="card">
+      <h2>Organograma da brigada</h2>
+      <p class="hint">Gerado automaticamente a partir da estrutura e dos setores cadastrados, conforme os exemplos do Anexo D da NPT-017.</p>
+      <div class="checkrow">
+        <input type="checkbox" id="orgCompactChk">
+        <label for="orgCompactChk">Mostrar apenas a contagem de brigadistas por setor (recomendado para listas grandes)</label>
+      </div>
+      <div class="actions">
+        <button class="btn-ghost" id="printOrgBtn">🖶 Imprimir organograma</button>
+        <button class="btn-ghost" id="printAllBtn">🖶 Imprimir relatório completo (organograma + cursos + lista)</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="org-wrap" id="orgWrap"></div>
+    </div>
+  </section>
+
+  <!-- TAB 5: COMPLEMENTAR -->
+  <section class="panel" id="tab-complementar">
+    <div class="card">
+      <h2>Brigadistas por curso especialista</h2>
+      <p class="hint">Separação por curso complementar (Anexo B, Tabela B2, da NPT-017): resgate em altura, resgate em espaço confinado, emergências com produtos químicos/perigosos e Sistema de Comando de Incidentes (SCI). Obrigatório para todos os brigadistas em plantas com produtos perigosos ou divisão M-5 (item 7.3.1).</p>
+      <div class="actions">
+        <button class="btn-ghost" id="printCompBtn">🖶 Imprimir esta lista</button>
+        <button class="btn-amber" id="exportExcelBtn">⇩ Exportar tudo em Excel (.xlsx)</button>
+      </div>
+    </div>
+    <div class="card" id="compReport"></div>
+  </section>
+
+  <div class="savedmsg" id="savedMsg">&nbsp;</div>
+</main>
+
+<div class="floatbar no-print">
+  <button class="btn-ghost btn-sm" id="exportJsonBtn">Exportar dados (.json)</button>
+  <button class="btn-ghost btn-sm" id="importJsonBtn">Importar dados</button>
+  <button class="btn-danger btn-sm" id="resetBtn">Limpar tudo</button>
+</div>
+<input type="file" id="importFile" accept="application/json" style="display:none">
+
+<script>
+var PRESET_DATA = [{"id": "303617", "nome": "Gilmar Schio", "funcao": "Mecânico II", "supervisor": "Daniel Bueno de Oliveira", "setor": "Lubrificação Utilidades I", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "306047", "nome": "Celia Maria Dos Santos", "funcao": "Operador de Produção III", "supervisor": "Almir de Mattos", "setor": "Caixaria Frango 1T - DVZ", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "306208", "nome": "Augustinho Michels", "funcao": "Eletricista III", "supervisor": "Elisandro Belo de Carvalho", "setor": "Manutenção Incubatório", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "306925", "nome": "Jose Valdecir Rodrigues", "funcao": "Mecânico III", "supervisor": "Cristina Minatto", "setor": "Operação Granja Arroio", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "307061", "nome": "Valdecir Telles", "funcao": "Operador Máquina Cereais", "supervisor": "Ademir Gerardi", "setor": "Rec/Arm Grãos DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "307281", "nome": "Sergio Luiz Dzioba", "funcao": "Operador Líder", "supervisor": "Guilherme Alduino Passarin Cadore", "setor": "Operação Óleos", "turno": "1", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "307300", "nome": "Vanderlei Vodzicki", "funcao": "Operador Líder", "supervisor": "Guilherme Alduino Passarin Cadore", "setor": "Operação Óleos", "turno": "3", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "307318", "nome": "Giovani Jose Bortolotto", "funcao": "Supervisor Produção II", "supervisor": "Odair Jose Schmoeler", "setor": "Sup Embalagem Sec/Expedic", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "307357", "nome": "Venilto Paulo da Silva", "funcao": "Líder Granja Aves", "supervisor": "Cristina Minatto", "setor": "Operação Granja Arroio", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "307424", "nome": "Vilmar Lovatto", "funcao": "Operador Líder", "supervisor": "Guilherme Alduino Passarin Cadore", "setor": "Operação Óleos", "turno": "C", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": false, "comando": false}, {"id": "307427", "nome": "Joao Carlos Marquesin", "funcao": "Mecânico II", "supervisor": "Anderson Frazao", "setor": "Manutenção Frango", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "307437", "nome": "Elisandro Belo de Carvalho", "funcao": "Supervisor Agrop Produção", "supervisor": "Adriano Vicente Martins", "setor": "Sup Incubatório 1T - DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "307547", "nome": "Silverio Ireno Da Costa", "funcao": "Operador Líder", "supervisor": "Claudete Machado Trevisan", "setor": "Eviceração Frangos 1T-DV", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "307620", "nome": "Joao Teterisc", "funcao": "Operador de Produção III", "supervisor": "Ednilson Telles Dos Santos", "setor": "S Cortes Frango 2T DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "307676", "nome": "Sidnei Iesbik", "funcao": "Coordenador Produção", "supervisor": "Giovanna Simonini Correa", "setor": "Coord Produção 1T", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "307784", "nome": "Claudiomiro Bressani Darao", "funcao": "Operador Geração Frio III", "supervisor": "Daniel Bueno de Oliveira", "setor": "Operação Geração Frio/Ar", "turno": "1", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "307830", "nome": "Edson Luiz Detoni", "funcao": "Tec Manutenção Elétrica I", "supervisor": "Elisandro Belo de Carvalho", "setor": "Manutenção Incubatório", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "307889", "nome": "Altimir Alves de Arruda", "funcao": "Operador ETA ETE II", "supervisor": "Joelcio Strappazzon", "setor": "Operação ETE", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "307892", "nome": "Silvonei Loch", "funcao": "Conferente", "supervisor": "Cleomar Batista da Silva", "setor": "Emb Secundária 2T - DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": true, "quimico": false, "comando": false}, {"id": "307904", "nome": "Sidinei Lemes Gomes", "funcao": "Eletricista II", "supervisor": "Elisandro Belo de Carvalho", "setor": "Manutenção Incubatório", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "307960", "nome": "Moacir Baranoski", "funcao": "Operador Empilhadeira", "supervisor": "Giovani Jose Bortolotto", "setor": "Câmara Carregamento Frango", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": false}, {"id": "307973", "nome": "Hercindo Crestani", "funcao": "Líder Grãos", "supervisor": "Ademir Gerardi", "setor": "Rec/Arm Grãos DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "308025", "nome": "Valdecir dos Santos", "funcao": "Operador Granjas Aves III", "supervisor": "Cristina Minatto", "setor": "Operação Granja SC", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "308077", "nome": "Emerson Dirceu da Rosa", "funcao": "Líder Incubatório", "supervisor": "Elisandro Belo de Carvalho", "setor": "Operação Incubatório", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "308134", "nome": "Rudinei Darao", "funcao": "Operador de Produção III", "supervisor": "Maicon Alexandre Prudencio", "setor": "S Cortes Frango 3T DVZ", "turno": "3", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "308151", "nome": "Flavio Luiz Canini", "funcao": "Operador Extração Óleos I", "supervisor": "Guilherme Alduino Passarin Cadore", "setor": "Operação Óleos", "turno": "1", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "308193", "nome": "Natalino Alves", "funcao": "Líder Grãos", "supervisor": "Ademir Gerardi", "setor": "Rec/Arm Grãos DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "308252", "nome": "Percio Aparecido Raimundo", "funcao": "Operador Extração Óleos I", "supervisor": "Guilherme Alduino Passarin Cadore", "setor": "Operação Óleos", "turno": "3", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "308279", "nome": "Renato Jose Rubert", "funcao": "Operador de Produção III", "supervisor": "Almir de Mattos", "setor": "Emb Secundária 1T - DVZ", "turno": "1", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "308292", "nome": "Ademilson Rosa", "funcao": "Supervisor Produção I", "supervisor": "Aldair Bortolini", "setor": "Sup Embalagem Inicial 2T", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "308342", "nome": "Ronivelton Bageston Pereira", "funcao": "Líder Ingredients", "supervisor": "Fabiola Bergamini", "setor": "Sup Utilidades DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": false}, {"id": "308402", "nome": "Juarez da Silva Costa", "funcao": "Operador Máquina Industri", "supervisor": "Almir de Mattos", "setor": "Caixaria Frango 1T - DVZ", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "308411", "nome": "Silvio Paulo Derengowski", "funcao": "Operador Extração Óleos I", "supervisor": "Guilherme Alduino Passarin Cadore", "setor": "Operação Óleos", "turno": "3", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "308428", "nome": "Claudinei dos Santos", "funcao": "Operador Máquina Industri", "supervisor": "Wesley Augusto Castilho", "setor": "Eviceração Frangos 3T-DV", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "308440", "nome": "Zigmar Simonetti", "funcao": "Operador Máquina Industri", "supervisor": "Ronaldo Pereira", "setor": "Caixaria Frango 3T - DVZ", "turno": "3", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "308442", "nome": "Noeli Sufiatti Cavejon", "funcao": "Operador de Produção III", "supervisor": "Almir de Mattos", "setor": "Caixaria Frango 1T - DVZ", "turno": "1", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "308502", "nome": "Rosenildo Antonio Kremer", "funcao": "Eletricista II", "supervisor": "Elisandro Belo de Carvalho", "setor": "Manutenção Incubatório", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "308598", "nome": "Adriano Brustolin", "funcao": "Classificador Cereais", "supervisor": "Ademir Gerardi", "setor": "Rec/Arm Grãos DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "308661", "nome": "Selonice De Col Comelli", "funcao": "Operador de Produção II", "supervisor": "Wesley Augusto Castilho", "setor": "Linha Gancheira DIF 3T", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "308708", "nome": "Fatima Ferreira De Andrade", "funcao": "Assistente Controle Agrop", "supervisor": "Fernando De Andrade", "setor": "ADM Apoio Agro", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "308728", "nome": "Sabina Gosdiuk Weber", "funcao": "Operador de Produção II", "supervisor": "Claudete Machado Trevisan", "setor": "Eviceração Frangos 1T-DV", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "308775", "nome": "Dirceu Jose Candido da Silva", "funcao": "Manutentor Civil II", "supervisor": "Lucas Izaias Dias", "setor": "Manutenção Civil", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": false}, {"id": "308834", "nome": "Anderson Luis Becker", "funcao": "Operador de Produção II", "supervisor": "Fabio Junior Beletini", "setor": "Embalagem Frango Inteiro", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "308844", "nome": "Anardele Aparecida De Morais Menim", "funcao": "Operador Líder", "supervisor": "Maicon Alexandre Prudencio", "setor": "S Cortes Frango 3T DVZ", "turno": "3", "status": "Afastamento", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "308961", "nome": "Junior Piovezam", "funcao": "Operador Geração Frio III", "supervisor": "Daniel Bueno de Oliveira", "setor": "Operação Geração Frio/Ar", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "309050", "nome": "Silvana Dutra", "funcao": "Tec Segurança Trabalho I", "supervisor": "Giovanna Emanuelle Barbosa", "setor": "Segurança do Trabalho", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "309166", "nome": "Ademir Ramos", "funcao": "Operador de Produção II", "supervisor": "Ednilson Telles Dos Santos", "setor": "S Cortes Frango 2T DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "318516", "nome": "Ezequias Rodrigues Pinto", "funcao": "Eletricista III", "supervisor": "Daniel Bueno de Oliveira", "setor": "Manut. Frio / Ar", "turno": "C", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "318517", "nome": "Luciano da Rosa", "funcao": "Operador de Produção II", "supervisor": "Fabio Junior Beletini", "setor": "Embalagem Frango Inteiro", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "318520", "nome": "Edson da Silva", "funcao": "Supervisor Produção I", "supervisor": "Aldair Bortolini", "setor": "Sup SIF 2T - DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "318543", "nome": "Marcos Fernando Farias de Oliveira", "funcao": "Auxiliar Inspeção II", "supervisor": "Eleandro Bordin", "setor": "SIF 1T - DVZ", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "318551", "nome": "Sidnei Ribeiro da Silva", "funcao": "Líder Incubatório", "supervisor": "Elisandro Belo de Carvalho", "setor": "Recebimento Ovos Incubató", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "318563", "nome": "Dilomar Grando", "funcao": "Eletricista II", "supervisor": "Anderson Frazao", "setor": "Manutenção Frango", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": false}, {"id": "318577", "nome": "Jucelia Moreira Da Silva", "funcao": "Líder Incubatório", "supervisor": "Robson Souza Da Cruz", "setor": "Sexagem Incubatório 2T DV", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": false}, {"id": "323650", "nome": "Joelcio Perotoni", "funcao": "Operador de Produção III", "supervisor": "Giovani Jose Bortolotto", "setor": "Câmara Carregamento Frango", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "324861", "nome": "Marcia Schultz", "funcao": "Operador Higienização II", "supervisor": "Jose Rodrigues Costa", "setor": "Higienização - DVZ", "turno": "2", "status": "Afastamento", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "325286", "nome": "Gentil Fortunato Peretto", "funcao": "Líder Incubatório", "supervisor": "Elisandro Belo de Carvalho", "setor": "Higienização Incubatório", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "325768", "nome": "Davi Alexandre Novello", "funcao": "Operador Máquina Industri", "supervisor": "Daniel Bueno de Oliveira", "setor": "Operação Geração Frio/Ar", "turno": "1", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "326079", "nome": "Adriano Izidrolino", "funcao": "Operador Empilhadeira", "supervisor": "Giovani Jose Bortolotto", "setor": "Câmara Carregamento Frango", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "326912", "nome": "Rosangela Rosa", "funcao": "Operador de Produção II", "supervisor": "Maicon Alexandre Prudencio", "setor": "S Cortes Frango 3T DVZ", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "327255", "nome": "Derlan Fernando Moreira", "funcao": "Tec Manutenção Elétrica I", "supervisor": "Luciomar Gesser", "setor": "Planejador", "turno": "C", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "327756", "nome": "Eurides de Mello", "funcao": "Tec Manutenção Elétrica I", "supervisor": "Lucas Izaias Dias", "setor": "Manutenção Rações", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "328242", "nome": "Crislaine Maria Lermen", "funcao": "Analista Garantia Qualida", "supervisor": "Elidiane Lorenzett", "setor": "Qualidade DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "328358", "nome": "Leocir Pires De Souza", "funcao": "Líder Grãos", "supervisor": "Ademir Gerardi", "setor": "Rec/Arm Grãos DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": true}, {"id": "329543", "nome": "Ednaldo Vieira Dutra", "funcao": "Operador Ingredients", "supervisor": "Fabiola Bergamini", "setor": "Operação FFG DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": false}, {"id": "331289", "nome": "Edison Risso", "funcao": "Operador Líder", "supervisor": "Ednilson Telles Dos Santos", "setor": "S Cortes Frango 2T DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "331688", "nome": "Elizandra Francisco De Oliveira", "funcao": "Operador de Produção II", "supervisor": "Claudete Machado Trevisan", "setor": "Eviceração Frangos 1T-DV", "turno": "1", "status": "Afastamento", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "331896", "nome": "Simone Pedroso Cappellaro Muller", "funcao": "Operador Líder", "supervisor": "Ednilson Telles Dos Santos", "setor": "S Cortes Frango 2T DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "333596", "nome": "Thiago Caldas Alves", "funcao": "Operador Máquina Incubato", "supervisor": "Robson Souza Da Cruz", "setor": "Operação Incubatório - DV", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "334416", "nome": "Sueli Borges Trindade", "funcao": "Operador de Produção II", "supervisor": "Maicon Alexandre Prudencio", "setor": "S Cortes Frango 3T DVZ", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "335403", "nome": "Claudia Machado", "funcao": "Auxiliar Controladoria", "supervisor": "Robson Leopoldo Kindlmann", "setor": "Balança Entrada Rações/Gr", "turno": "0", "status": "Afastamento", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "336656", "nome": "Luci Fatima Harka Mezzalira", "funcao": "Líder Incubatório", "supervisor": "Robson Souza Da Cruz", "setor": "Operação Incubatório - DV", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "338426", "nome": "Danieli Guedes De Oliveira", "funcao": "Operador de Produção III", "supervisor": "Claudete Machado Trevisan", "setor": "Escald/Depenagem Fgo 1T", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": true, "quimico": false, "comando": true}, {"id": "339484", "nome": "Damares Pavao Siebre", "funcao": "Operador Granjas Aves III", "supervisor": "Cristina Minatto", "setor": "Operação Granja Cruzeiro", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": false, "quimico": false, "comando": false}, {"id": "342896", "nome": "Luiz Farezin", "funcao": "Operador Extração Óleos I", "supervisor": "Guilherme Alduino Passarin Cadore", "setor": "Operação Óleos", "turno": "2", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "344026", "nome": "Jadson Andre Farias Baicere", "funcao": "Tec Manutenção Elétrica I", "supervisor": "Luciomar Gesser", "setor": "Obras e Projetos", "turno": "C", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "344125", "nome": "Valdecir de Jesus da Luz", "funcao": "Operador de Produção II", "supervisor": "Ricardo Panisson", "setor": "MF Frango 3T - DVZ", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "345630", "nome": "Edenilson Borges Vieira", "funcao": "Operador Líder", "supervisor": "Wesley Augusto Castilho", "setor": "Eviceração Frangos 3T-DV", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "346007", "nome": "Sidnei de Ramos", "funcao": "Operador Máquina Cereais", "supervisor": "Ademir Gerardi", "setor": "Rec/Arm Grãos DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": true}, {"id": "346183", "nome": "Valdecir Borges", "funcao": "Mecânico II", "supervisor": "Lucas Izaias Dias", "setor": "Manutenção Óleos", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "347063", "nome": "Diogo Bavaresco", "funcao": "Tec Manutenção Elétrica I", "supervisor": "Joelcio Strappazzon", "setor": "Manut. ETE", "turno": "C", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "351583", "nome": "Rozana Antonio Paz", "funcao": "Auxiliar Inspeção II", "supervisor": "Eleandro Bordin", "setor": "SIF 1T - DVZ", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "351589", "nome": "Tatiana De Oliveira", "funcao": "Operador de Produção II", "supervisor": "Maicon Alexandre Prudencio", "setor": "S Cortes Frango 3T DVZ", "turno": "3", "status": "Afastamento", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "353154", "nome": "Giovana Warmling", "funcao": "Auxiliar Rotinas Operacio", "supervisor": "Eleandro Bordin", "setor": "SIF 1T - DVZ", "turno": "1", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": false}, {"id": "353736", "nome": "Valdair Rodrigues Martins", "funcao": "Mecânico III", "supervisor": "Cristina Minatto", "setor": "Operação Granja Cruzeiro", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "357303", "nome": "Flavia Guarnieri", "funcao": "Operador de Produção III", "supervisor": "Maicon Alexandre Prudencio", "setor": "S Cortes Frango 3T DVZ", "turno": "3", "status": "Afastamento", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "385993", "nome": "Jorandir Alves De Valem", "funcao": "Operador Granjas Aves III", "supervisor": "Cristina Minatto", "setor": "Operação Granja Cruzeiro", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "387270", "nome": "Erna Angela Fabricio", "funcao": "Operador de Produção III", "supervisor": "Ademilson Rosa", "setor": "Embalagem Frango Inteiro", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "408014", "nome": "Claudete Werlich Maschio", "funcao": "Operador Máquina Industri", "supervisor": "Wesley Augusto Castilho", "setor": "S Cortes Frango 1T DVZ", "turno": "1", "status": "Afastamento", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "413283", "nome": "Adao Rodrigo Mattei", "funcao": "Operador Geração Frio II", "supervisor": "Daniel Bueno de Oliveira", "setor": "Operação Geração Frio/Ar", "turno": "2", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "413285", "nome": "Junior Engels", "funcao": "Tec Manutenção Elétrica I", "supervisor": "Joelcio Strappazzon", "setor": "Manut. ETE", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "417100", "nome": "Edivan Juliano Rechi", "funcao": "Tec Manutenção Elétrica I", "supervisor": "Leucir Goncalves", "setor": "Manutenção Frango", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "435746", "nome": "Lucivane Venassi Paulus", "funcao": "Operador Higienização II", "supervisor": "Jose Rodrigues Costa", "setor": "Higienização - DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "440250", "nome": "Danieli Iung", "funcao": "Operador Máquina Industri", "supervisor": "Maicon Alexandre Prudencio", "setor": "S Cortes Frango 3T DVZ", "turno": "3", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "448586", "nome": "Jeciel Luan da Silva", "funcao": "Operador Incubatório III", "supervisor": "Robson Souza Da Cruz", "setor": "Higienização Incubatório", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "453886", "nome": "Josiane Gerardi", "funcao": "Operador de Produção III", "supervisor": "Maicon Alexandre Prudencio", "setor": "S Cortes Frango 3T DVZ", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "460358", "nome": "Ademario Silva Fernandes", "funcao": "Operador Higienização III", "supervisor": "Jose Rodrigues Costa", "setor": "Higienização - DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "465792", "nome": "Gilson Petro", "funcao": "Operador Extração Óleos I", "supervisor": "Guilherme Alduino Passarin Cadore", "setor": "Operação Óleos", "turno": "2", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "474098", "nome": "Lucia Santos da Fonseca", "funcao": "Auxiliar Inspeção II", "supervisor": "Eleandro Bordin", "setor": "SIF 1T - DVZ", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "482270", "nome": "Ademir Paes de Morais", "funcao": "Operador Máquina Industri", "supervisor": "Ederson Iesbik", "setor": "MF Frango 2T - DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "484683", "nome": "Gizeli Donida", "funcao": "Supervisor Produção I", "supervisor": "Sidnei Iesbik", "setor": "Sup Espostejamento 1-DVZ", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "506024", "nome": "Marli Angela Fantin", "funcao": "Auxiliar Inspeção II", "supervisor": "Giovani da Silva", "setor": "SIF 3T - DVZ", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "508167", "nome": "Lucas Silvestre Teston Binotto", "funcao": "Supervisor Integração Cor", "supervisor": "Adriano Vicente Martins", "setor": "Sup Frango Corte 2 - DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "509767", "nome": "Ademir Luiz Patussi", "funcao": "Operador Máquina Industri", "supervisor": "Ricardo Panisson", "setor": "MF Frango 3T - DVZ", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "513573", "nome": "Alan Junior Bilica", "funcao": "Mecânico III", "supervisor": "Cristina Minatto", "setor": "Operação Granja SC", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "513846", "nome": "Taciani Pavlak", "funcao": "Operador Máquina Industri", "supervisor": "Gizeli Donida", "setor": "S Cortes Frango 1T DVZ", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "521074", "nome": "Eva Fernandes de Oliveira", "funcao": "Operador Higienização II", "supervisor": "Jose Rodrigues Costa", "setor": "Higienização - DVZ", "turno": "2", "status": "Afastamento", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "523064", "nome": "Ademir Pereira", "funcao": "Operador Máquina Cereais", "supervisor": "Ademir Gerardi", "setor": "Rec/Arm Grãos DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": true, "quimico": false, "comando": true}, {"id": "541820", "nome": "Caroline Schmitz Martinazzo", "funcao": "Analista de Ergonomia SR", "supervisor": "Giovanna Emanuelle Barbosa", "setor": "Centro de Saúde", "turno": "0", "status": "Afastamento", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "545368", "nome": "Edinaldo Leandro Antonelo", "funcao": "Operador Máquina Ingredie", "supervisor": "Fabiola Bergamini", "setor": "Operação FFG DVZ", "turno": "0", "status": "Afastamento", "brigada": true, "altura": true, "confinado": false, "quimico": true, "comando": true}, {"id": "545373", "nome": "Gilvane Pilonetto Neves", "funcao": "Líder Rações", "supervisor": "Ademir Gerardi", "setor": "Fábrica de Rações - DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": false, "quimico": true, "comando": true}, {"id": "554612", "nome": "Darlei da Silva Machado", "funcao": "Operador Máquina Industri", "supervisor": "Daniel Bueno de Oliveira", "setor": "Operação Geração Frio/Ar", "turno": "2", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "562769", "nome": "Ana Claudia da Rosa Clein", "funcao": "Analista Planejamento Ope", "supervisor": "Neide Polidoro", "setor": "PCP", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "565512", "nome": "Alex Sandro Sanchez De Aguiar", "funcao": "Analista Adm Florestal JR", "supervisor": "Alexryus Augusto Altran", "setor": "Florestal DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "565905", "nome": "Alan Fogassa da Silva", "funcao": "Almoxarife", "supervisor": "Robson Leopoldo Kindlmann", "setor": "Almoxarifado - DVZ", "turno": "C", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "571748", "nome": "Daniel Bueno de Oliveira", "funcao": "Supervisor Manutenção", "supervisor": "Luciomar Gesser", "setor": "Sup Manut. e Op. Utilidad", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "578411", "nome": "Djenifer Rafaela Cordeiro Tereza", "funcao": "Líder Rações", "supervisor": "Ademir Gerardi", "setor": "Fábrica de Rações - DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": true}, {"id": "583177", "nome": "Alexandre Duarte de Almeida", "funcao": "Analista Manutenção II", "supervisor": "Luciomar Gesser", "setor": "Eng. Manut.", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "589928", "nome": "Liz Romina Sosa Vargas", "funcao": "Operador Tradutor", "supervisor": "Sidnei Iesbik", "setor": "Coord Produção 1T", "turno": "1", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "593179", "nome": "Geovana Sansigolo", "funcao": "Operador Higienização II", "supervisor": "Jose Rodrigues Costa", "setor": "Higienização - DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "598809", "nome": "Vagner Daniel Burato Ritter", "funcao": "Operador Máquina Industri", "supervisor": "Ederson Iesbik", "setor": "MF Frango 2T - DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "600719", "nome": "William Ricardo Buchgraeber", "funcao": "Operador Máquina Racoes I", "supervisor": "Ademir Gerardi", "setor": "Fábrica de Rações - DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "602136", "nome": "Jonas Mateus Dorneles", "funcao": "Extensionista Matrizes II", "supervisor": "Juliano Zampoli", "setor": "Integração Matrizes Frang", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "602597", "nome": "Vagner Lima De Oliveira", "funcao": "Operador de Produção II", "supervisor": "Fabio Junior Beletini", "setor": "Embalagem Frango Inteiro", "turno": "3", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "603565", "nome": "Clesio Ghizoni", "funcao": "Tec Manutenção II", "supervisor": "Marcio Jose Rossetti", "setor": "Manutenção de Suporte e I", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": false, "quimico": true, "comando": true}, {"id": "603977", "nome": "Marciane Kammer", "funcao": "Assistente Controle Agrop", "supervisor": "Fernando De Andrade", "setor": "ADM Apoio Agro", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "605057", "nome": "Patrick Da Silva De Souza", "funcao": "Operador Extração Óleos I", "supervisor": "Guilherme Alduino Passarin Cadore", "setor": "Operação Óleos", "turno": "1", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "605460", "nome": "Valmir Barbosa", "funcao": "Manutentor Civil II", "supervisor": "Marcio Jose Rossetti", "setor": "Manutenção de Suporte e I", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "610839", "nome": "Roberto Carlos Froes", "funcao": "Mecânico I", "supervisor": "Anderson Frazao", "setor": "Manutenção Frango", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "614864", "nome": "Juliano Fernandes", "funcao": "Tec Manutenção I", "supervisor": "Lucas Izaias Dias", "setor": "Manutenção Rações", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "626230", "nome": "Jaqueline Iaginnski", "funcao": "Assistente Suporte a Gere", "supervisor": "Sidnei Iesbik", "setor": "Coord Produção 1T", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "631095", "nome": "Ariel Dos Santos", "funcao": "Operador Máquina Cereais", "supervisor": "Ademir Gerardi", "setor": "Rec/Arm Grãos DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "632309", "nome": "Leila Aparecida Rodrigues Cordeiro", "funcao": "Operador Higienização II", "supervisor": "Jose Rodrigues Costa", "setor": "Higienização - DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "634272", "nome": "Camila Patricia Barbosa", "funcao": "Auxiliar Rotinas Operacio", "supervisor": "Adair Jose Cagnini", "setor": "Eviceração Frangos 2T-DV", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": true}, {"id": "634337", "nome": "Everton Lucas Cechet", "funcao": "Operador Máquina Industri", "supervisor": "Daniel Bueno de Oliveira", "setor": "Operação Geração Frio/Ar", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "634629", "nome": "Aldair Bortolini", "funcao": "Coordenador Produção", "supervisor": "Giovanna Simonini Correa", "setor": "Coord Produção 2T - DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "656483", "nome": "Anderson Braz", "funcao": "Operador Máquina Industri", "supervisor": "Wesley Augusto Castilho", "setor": "Escald/Depenagem Fgo 3T", "turno": "3", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "657512", "nome": "Ludinei Schlikman", "funcao": "Operador Caldeira II", "supervisor": "Guilherme Alduino Passarin Cadore", "setor": "Operação Vapor", "turno": "1", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "658953", "nome": "Dilonei Bertoncello", "funcao": "Tec Manutenção Elétrica I", "supervisor": "Leucir Goncalves", "setor": "Manutenção Frango", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "660862", "nome": "Cleiton Da Costa", "funcao": "Tec Manutenção II", "supervisor": "Leucir Goncalves", "setor": "Manutenção Frango", "turno": "3", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "665160", "nome": "Osmar Rosa da Silva", "funcao": "Almoxarife", "supervisor": "Robson Leopoldo Kindlmann", "setor": "Almoxarifado - DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "667168", "nome": "Maria Luiza Da Cruz Santos", "funcao": "Analista Laboratório Indu", "supervisor": "Maryel Claudia Reginato", "setor": "Laboratório FQ Geral DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "668507", "nome": "Juliana Fatima do Nascimento", "funcao": "Operador de Produção II", "supervisor": "Claudete Machado Trevisan", "setor": "Linha Gancheira DIF 1T", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "669866", "nome": "Rozineia Wosniak", "funcao": "Auxiliar Inspeção II", "supervisor": "Giovani da Silva", "setor": "SIF 3T - DVZ", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "672081", "nome": "Cassiano Rodrigues Pickler", "funcao": "Operador Máquina Incubato", "supervisor": "Robson Souza Da Cruz", "setor": "Operação Incubatório - DV", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "673114", "nome": "Camila Raulino", "funcao": "Auxiliar Inspeção II", "supervisor": "Eleandro Bordin", "setor": "SIF 1T - DVZ", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "674876", "nome": "Almir de Mattos", "funcao": "Supervisor Produção II", "supervisor": "Sidnei Iesbik", "setor": "Sup Embl Secundária 1T DV", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "674881", "nome": "Juventino da Silva Barbosa", "funcao": "Supervisor Produção II", "supervisor": "Odair Jose Schmoeler", "setor": "Sup Controle de Processos", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "675297", "nome": "Erica Alves de Morais", "funcao": "Avaliador Qualidade", "supervisor": "Adriana Cristina Dos Santos Brand", "setor": "Sup Garantia Qualidade", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "683636", "nome": "Evandro Bet Nasario", "funcao": "Conferente", "supervisor": "Ronaldo Pereira", "setor": "Emb Secundária 3T - DVZ", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "683894", "nome": "Daniela Alves de Souza", "funcao": "Operador de Produção II", "supervisor": "Ronaldo Pereira", "setor": "Caixaria Frango 3T - DVZ", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "710976", "nome": "Ketlin Daiane Britzke", "funcao": "Operador Máquina Industri", "supervisor": "Edelvam Paiano", "setor": "Embalagem Frango Inteiro", "turno": "1", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "716107", "nome": "Joeline da Silva Galvao de Morais", "funcao": "Operador de Produção II", "supervisor": "Fabio Junior Beletini", "setor": "Embalagem Frango Inteiro", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "717377", "nome": "Anderson Gabriel Radke", "funcao": "Operador Líder", "supervisor": "Viviane Belusso", "setor": "MF Frango 1T - DVZ", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "722630", "nome": "Carolina Da Silva Chaves", "funcao": "Operador de Produção II", "supervisor": "Ednilson Telles Dos Santos", "setor": "S Cortes Frango 2T DVZ", "turno": "2", "status": "Afastamento", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "723498", "nome": "Erica Cantanhede Barros", "funcao": "Operador de Produção III", "supervisor": "Ademilson Rosa", "setor": "Embalagem Frango Inteiro", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "723501", "nome": "Gleudianes Da Conceicao De Jesus Batista", "funcao": "Auxiliar Inspeção II", "supervisor": "Edson da Silva", "setor": "SIF 2T - DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": true}, {"id": "725689", "nome": "Jonathan Manuel Yendiz", "funcao": "Operador de Produção III", "supervisor": "Viviane Belusso", "setor": "MF Frango 1T - DVZ", "turno": "1", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "725692", "nome": "Jose Luis Salazar Otero", "funcao": "Operador de Produção II", "supervisor": "Ricardo Panisson", "setor": "MF Frango 3T - DVZ", "turno": "3", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "732102", "nome": "Allysson Da Silva Vestley De Lima", "funcao": "Operador de Produção II", "supervisor": "Cleomar Batista da Silva", "setor": "Emb Secundária 2T - DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "734595", "nome": "Ndeye Fatma Fall Niang Ep Mbacke", "funcao": "Operador de Produção II", "supervisor": "Wesley Augusto Castilho", "setor": "Eviceração Frangos 3T-DV", "turno": "3", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "735371", "nome": "Giselle Da Fonseca Veiga", "funcao": "Operador de Produção III", "supervisor": "Gizeli Donida", "setor": "S Cortes Frango 1T DVZ", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "736395", "nome": "Vaneuma De Barros Castro", "funcao": "Auxiliar Inspeção II", "supervisor": "Edson da Silva", "setor": "SIF 2T - DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "737375", "nome": "Nilson Bernardo", "funcao": "Operador Higienização II", "supervisor": "Jose Rodrigues Costa", "setor": "Higienização - DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "737438", "nome": "Magali De Fatima Lazarin", "funcao": "Operador Máquina Industri", "supervisor": "Ademilson Rosa", "setor": "Embalagem Frango Inteiro", "turno": "2", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "738045", "nome": "Katia Cilene Marinho Franco", "funcao": "Auxiliar Inspeção II", "supervisor": "Giovani da Silva", "setor": "SIF 3T - DVZ", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "738765", "nome": "Janete De Fatima Da Rosa", "funcao": "Operador de Produção II", "supervisor": "Wesley Augusto Castilho", "setor": "Linha Gancheira DIF 3T", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "739997", "nome": "Luiz Felipe Brustolin", "funcao": "Operador ETA ETE II", "supervisor": "Joelcio Strappazzon", "setor": "Operação ETE", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "740483", "nome": "Marizete Godoski", "funcao": "Operador de Produção II", "supervisor": "Claudete Machado Trevisan", "setor": "Escald/Depenagem Fgo 1T", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "741930", "nome": "Leonei Sampaio Ruthes", "funcao": "Operador Líder", "supervisor": "Cleomar Batista da Silva", "setor": "Emb Secundária 2T - DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "743193", "nome": "Thayana Miranda Da Vera Cruz", "funcao": "Avaliador Qualidade", "supervisor": "Adriana Cristina Dos Santos Brand", "setor": "Sup Garantia Qualidade", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": true}, {"id": "745849", "nome": "Eliane Menegati Da Costa Aguiar", "funcao": "Auxiliar Inspeção II", "supervisor": "Edson da Silva", "setor": "SIF 2T - DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "746449", "nome": "Jucilaine Aparecida De Oliveira Varela", "funcao": "Operador de Produção II", "supervisor": "Ademilson Rosa", "setor": "Embalagem Frango Inteiro", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "753906", "nome": "Daniel Izaias Dos Santos", "funcao": "Operador de Produção II", "supervisor": "Adair Jose Cagnini", "setor": "Eviceração Frangos 2T-DV", "turno": "2", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "755117", "nome": "Edenilson Luiz Carlesso", "funcao": "Mecânico III", "supervisor": "Marcio Jose Rossetti", "setor": "Manutenção de Suporte e I", "turno": "1", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "757010", "nome": "Josias Viana Da Cruz", "funcao": "Operador Máquina Industri", "supervisor": "Wesley Augusto Castilho", "setor": "Escald/Depenagem Fgo 3T", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "758382", "nome": "Oswaldo Jose Bogarin Salazar", "funcao": "Operador de Produção II", "supervisor": "Claudete Machado Trevisan", "setor": "Linha Gancheira DIF 1T", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "761777", "nome": "Adriel Zanivam", "funcao": "Operador Máquina Industri", "supervisor": "Wesley Augusto Castilho", "setor": "Eviceração Frangos 3T-DV", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "762772", "nome": "Taisa Abatti Malaguti", "funcao": "Laboratorista Industrial", "supervisor": "Maryel Claudia Reginato", "setor": "Laboratório FQ Geral DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "767053", "nome": "Marilde Mendes", "funcao": "Operador de Produção II", "supervisor": "Claudete Machado Trevisan", "setor": "Linha Gancheira DIF 1T", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "776672", "nome": "Sara Alberton", "funcao": "Auxiliar Inspeção II", "supervisor": "Eleandro Bordin", "setor": "SIF 1T - DVZ", "turno": "1", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "782570", "nome": "Joab De Oliveira", "funcao": "Operador Caldeira II", "supervisor": "Guilherme Alduino Passarin Cadore", "setor": "Operação Vapor", "turno": "1", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "788902", "nome": "Davi Pereira Marques", "funcao": "Operador Máquina Ingredie", "supervisor": "Fabiola Bergamini", "setor": "Operação FFG DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "795520", "nome": "Ariel Tomasi Ribeiro Nunes", "funcao": "Auxiliar Inspeção II", "supervisor": "Giovani da Silva", "setor": "SIF 3T - DVZ", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "801289", "nome": "Maria Lays Dos Santos", "funcao": "Auxiliar Inspeção II", "supervisor": "Giovani da Silva", "setor": "SIF 3T - DVZ", "turno": "3", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "802447", "nome": "Francieli Aparecida Toledo Caetano", "funcao": "Operador Incubatório III", "supervisor": "Robson Souza Da Cruz", "setor": "Sexagem Incubatório 2T DV", "turno": "0", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "804850", "nome": "Marcos Vinicius Soares Dos Prazeres", "funcao": "Operador de Produção II", "supervisor": "Maicon Alexandre Prudencio", "setor": "S Cortes Frango 3T DVZ", "turno": "3", "status": "Ativo", "brigada": true, "altura": false, "confinado": true, "quimico": false, "comando": false}, {"id": "807194", "nome": "David Islan Costa Gomes", "funcao": "Operador de Produção II", "supervisor": "Ricardo Panisson", "setor": "MF Frango 3T - DVZ", "turno": "3", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": false}, {"id": "817826", "nome": "Fernando De Souza Santana", "funcao": "Operador de Produção III", "supervisor": "Adair Jose Cagnini", "setor": "Eviceração Frangos 2T-DV", "turno": "2", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "822187", "nome": "Simone Prescila Nhebauer", "funcao": "Auxiliar Inspeção II", "supervisor": "Edson da Silva", "setor": "SIF 2T - DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "835810", "nome": "Priscila Soares Da Cunha De Oliveira", "funcao": "Operador de Produção II", "supervisor": "Gizeli Donida", "setor": "S Cortes Frango 1T DVZ", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "838331", "nome": "Ryan De Andrade", "funcao": "Operador de Produção II", "supervisor": "Edelvam Paiano", "setor": "Embalagem Frango Inteiro", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "844276", "nome": "Alan Junior Farias De Avila", "funcao": "Operador de Produção II", "supervisor": "Cleomar Batista da Silva", "setor": "Emb Secundária 2T - DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "861972", "nome": "Felipe Antonio Pinheiro Fiorentin", "funcao": "Operador de Produção II", "supervisor": "Ednilson Telles Dos Santos", "setor": "S Cortes Frango 2T DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "864480", "nome": "Juan Daniel Hechavarria Pompa", "funcao": "Operador Higienização II", "supervisor": "Jose Rodrigues Costa", "setor": "Higienização - DVZ", "turno": "2", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "867884", "nome": "Dirceu Soares Novais", "funcao": "Operador Máquina Ingredie", "supervisor": "Fabiola Bergamini", "setor": "Operação FFG DVZ", "turno": "0", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "890541", "nome": "Erick Kauan De Cesaro Dos Santos", "funcao": "Auxiliar Inspeção II", "supervisor": "Giovani da Silva", "setor": "SIF 3T - DVZ", "turno": "3", "status": "Ativo", "brigada": true, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "894681", "nome": "Eduardo Mateus Filisbino Woievoda", "funcao": "Auxiliar Inspeção II", "supervisor": "Eleandro Bordin", "setor": "SIF 1T - DVZ", "turno": "1", "status": "Ativo", "brigada": true, "altura": false, "confinado": false, "quimico": false, "comando": false}, {"id": "305870", "nome": "Ademir Jose dos Santos", "funcao": "Operador Máquina Industri", "supervisor": "Cleomar Batista da Silva", "setor": "Emb Secundária 2T - DVZ", "turno": "2", "status": "Ativo", "brigada": false, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "308486", "nome": "Ademir May", "funcao": "Líder Rações", "supervisor": "Ademir Gerardi", "setor": "Sup Fábrica de Rações DVZ", "turno": "0", "status": "Ativo", "brigada": false, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "405117", "nome": "Cleiton Sant Anna Fiori", "funcao": "Operador de Produção III", "supervisor": "Ademilson Rosa", "setor": "Embalagem Frango Inteiro", "turno": "2", "status": "Ativo", "brigada": false, "altura": true, "confinado": true, "quimico": false, "comando": false}, {"id": "596507", "nome": "Alexandre Alves", "funcao": "Operador de Produção III", "supervisor": "Almir de Mattos", "setor": "Emb Secundária 1T - DVZ", "turno": "1", "status": "Ativo", "brigada": false, "altura": true, "confinado": true, "quimico": true, "comando": true}, {"id": "307806", "nome": "Antonio Odair Mandstok", "funcao": "Supervisor Recebimento Ar", "supervisor": "Adriano Vicente Martins", "setor": "Sup Rec_Arm Grãos", "turno": "0", "status": "Afastamento", "brigada": false, "altura": false, "confinado": false, "quimico": true, "comando": false}, {"id": "308343", "nome": "Marcio Boncoski", "funcao": "Tec Manutenção Elétrica I", "supervisor": "Daniel Bueno de Oliveira", "setor": "Manut. Frio / Ar", "turno": "C", "status": "Ativo", "brigada": false, "altura": false, "confinado": false, "quimico": true, "comando": false}];
+</script>
+<script>
+(function(){
+  "use strict";
+
+  var COMP_MODULES = [
+    {id:"altura", label:"Resgate em altura"},
+    {id:"confinado", label:"Resgate em espaço confinado"},
+    {id:"perigosos", label:"Resgate / emergências com produtos químicos"},
+    {id:"sci", label:"Sistema de Comando de Incidentes (SCI)"},
+    {id:"resp", label:"Proteção respiratória (EPRA)"},
+    {id:"desencarce", label:"Desencarceramento e extração de vítimas"}
+  ];
+  var PRESET_MAP = {altura:"altura", confinado:"confinado", quimico:"perigosos", comando:"sci"};
+
+  function buildPresetNamesList(){
+    var dl = document.getElementById("presetNamesList");
+    if(!dl){
+      dl = document.createElement("datalist");
+      dl.id = "presetNamesList";
+      document.body.appendChild(dl);
+    }
+    var seen = {};
+    var opts = "";
+    PRESET_DATA.forEach(function(p){
+      if(seen[p.nome]) return;
+      seen[p.nome] = true;
+      opts += '<option value="'+p.nome.replace(/"/g,"&quot;")+'"></option>';
+    });
+    dl.innerHTML = opts;
+  }
+
+  function findPresetByName(nome){
+    var term = (nome||"").trim().toLowerCase();
+    if(!term) return null;
+    return PRESET_DATA.find(function(p){ return p.nome.toLowerCase() === term; }) || null;
+  }
+
+  function addBrigadistaToSetor(setor, nomeDigitado){
+    var nome = (nomeDigitado||"").trim();
+    if(!nome) return;
+    var preset = findPresetByName(nome);
+    if(preset){
+      var comp = {};
+      Object.keys(PRESET_MAP).forEach(function(k){ comp[PRESET_MAP[k]] = !!preset[k]; });
+      setor.brigadistas.push({
+        id: uid(), matricula: preset.id, nome: preset.nome, funcao: preset.funcao,
+        tipo: "organico", exclusiva: false, dataFormacao: "",
+        status: preset.status, ativoBrigada: !!preset.brigada, comp: comp
+      });
+    } else {
+      setor.brigadistas.push({id:uid(), matricula:"", nome:nome, funcao:"", tipo:"organico", exclusiva:false, dataFormacao:"", status:"Ativo", ativoBrigada:true, comp:{}});
+    }
+  }
+  var TURNO_LABELS = {
+    "0":"Turno Administrativo / Geral",
+    "1":"1º Turno",
+    "2":"2º Turno",
+    "3":"3º Turno",
+    "C":"Turno C"
+  };
+
+  var state = {
+    coord: {enabled:false, nome:""},
+    grupos: [],
+    setores: []
+  };
+
+  function uid(){ return Math.random().toString(36).slice(2,10); }
+
+  function save(){
+    try{
+      localStorage.setItem("safeseg_organograma_npt017_v2", JSON.stringify(state));
+      var m = document.getElementById("savedMsg");
+      m.textContent = "Salvo neste dispositivo às " + new Date().toLocaleTimeString("pt-BR");
+      clearTimeout(save._t);
+      save._t = setTimeout(function(){ m.textContent = "\u00A0"; }, 2500);
+    }catch(e){ console.error("Falha ao salvar localmente:", e); }
+  }
+
+  function load(){
+    try{
+      var raw = localStorage.getItem("safeseg_organograma_npt017_v2");
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(parsed && typeof parsed === "object"){ state = parsed; }
+      }
+    }catch(e){ console.error("Falha ao carregar dados salvos:", e); }
+  }
+
+  // ---------- TABS ----------
+  document.querySelectorAll(".tab-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      document.querySelectorAll(".tab-btn").forEach(function(b){ b.classList.remove("active"); });
+      document.querySelectorAll("section.panel").forEach(function(p){ p.classList.remove("active"); });
+      btn.classList.add("active");
+      document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+      if(btn.dataset.tab === "organograma") renderOrg();
+      if(btn.dataset.tab === "complementar") renderComp();
+      if(btn.dataset.tab === "controle") renderControle();
+    });
+  });
+
+  // ---------- PRESET LOADER ----------
+  document.getElementById("loadPresetBtn").addEventListener("click", function(){
+    if(state.setores.length && !confirm("Isso substitui os turnos/setores/brigadistas já cadastrados pelos dados da planilha. Continuar?")) return;
+
+    var grupos = {};
+    var turnos = Object.keys(TURNO_LABELS);
+    turnos.forEach(function(t){
+      var used = PRESET_DATA.some(function(p){ return p.turno === t; });
+      if(used) grupos[t] = {id:uid(), nome:TURNO_LABELS[t], chefe:""};
+    });
+    state.grupos = turnos.filter(function(t){ return grupos[t]; }).map(function(t){ return grupos[t]; });
+
+    var supervisorCount = {};
+    PRESET_DATA.forEach(function(p){
+      var key = p.turno + "||" + p.setor;
+      supervisorCount[key] = supervisorCount[key] || {};
+      var sup = p.supervisor || "";
+      supervisorCount[key][sup] = (supervisorCount[key][sup]||0) + 1;
+    });
+    function majoritySupervisor(key){
+      var counts = supervisorCount[key] || {};
+      var best = "", bestN = 0;
+      Object.keys(counts).forEach(function(name){
+        if(counts[name] > bestN){ bestN = counts[name]; best = name; }
+      });
+      return best;
+    }
+
+    var setorIndex = {};
+    state.setores = [];
+    PRESET_DATA.forEach(function(p){
+      var g = grupos[p.turno];
+      var key = p.turno + "||" + p.setor;
+      if(!setorIndex[key]){
+        var s = {id:uid(), nome:p.setor, grupoId:g.id, lider:"", supervisor:majoritySupervisor(key), brigadistas:[]};
+        setorIndex[key] = s;
+        state.setores.push(s);
+      }
+      var comp = {};
+      Object.keys(PRESET_MAP).forEach(function(k){ comp[PRESET_MAP[k]] = !!p[k]; });
+      setorIndex[key].brigadistas.push({
+        id: uid(),
+        matricula: p.id,
+        nome: p.nome,
+        funcao: p.funcao,
+        tipo: "organico",
+        exclusiva: false,
+        dataFormacao: "",
+        status: p.status,
+        ativoBrigada: !!p.brigada,
+        comp: comp
+      });
+    });
+
+    save(); renderAll();
+    document.querySelector('.tab-btn[data-tab="setores"]').click();
+    alert("Pronto! " + PRESET_DATA.length + " brigadistas carregados em " + state.setores.length + " setores, distribuídos em " + state.grupos.length + " turnos. Agora é só preencher o chefe da brigada, os chefes de turno e os líderes de cada setor.");
+  });
+
+  // ---------- COORDENADOR ----------
+  var coordEnabled = document.getElementById("coordEnabled");
+  var coordNome = document.getElementById("coordNome");
+  var coordNameWrap = document.getElementById("coordNameWrap");
+
+  coordEnabled.addEventListener("change", function(){
+    state.coord.enabled = coordEnabled.checked;
+    coordNameWrap.style.display = coordEnabled.checked ? "block" : "none";
+    save();
+  });
+  coordNome.addEventListener("input", function(){
+    state.coord.nome = coordNome.value;
+    save();
+  });
+
+  // ---------- GRUPOS ----------
+  function renderGrupos(){
+    var wrap = document.getElementById("gruposList");
+    wrap.innerHTML = "";
+    if(state.grupos.length === 0){
+      wrap.innerHTML = '<p class="hint" style="margin:0">Nenhum chefe/turno cadastrado ainda.</p>';
+    }
+    state.grupos.forEach(function(g){
+      var block = document.createElement("div");
+      block.style.borderBottom = "1px dashed var(--line)";
+      block.style.paddingBottom = "10px";
+      block.style.marginBottom = "10px";
+
+      var row = document.createElement("div");
+      row.className = "row";
+      row.style.alignItems = "center";
+      row.style.marginBottom = "4px";
+      row.innerHTML =
+        '<div><label>Nome do chefe/turno</label><input type="text" data-field="nome" value="'+esc(g.nome)+'"></div>' +
+        '<div><label>Nome de quem é o chefe</label><input type="text" data-field="chefe" value="'+esc(g.chefe)+'"></div>' +
+        '<div style="flex:0 0 auto;align-self:flex-end"><button class="btn-danger btn-sm" data-del="1">Remover</button></div>';
+      row.querySelector('[data-field="nome"]').addEventListener("input", function(e){ g.nome = e.target.value; save(); refreshSetorGrupoOptions(); });
+      row.querySelector('[data-field="chefe"]').addEventListener("input", function(e){ g.chefe = e.target.value; save(); });
+      row.querySelector('[data-del]').addEventListener("click", function(){
+        if(!confirm('Remover "'+g.nome+'" e todos os setores/brigadistas vinculados a ele?')) return;
+        state.grupos = state.grupos.filter(function(x){ return x.id !== g.id; });
+        state.setores = state.setores.filter(function(s){ return s.grupoId !== g.id; });
+        save(); renderGrupos(); refreshSetorGrupoOptions(); renderSetores();
+      });
+      block.appendChild(row);
+
+      if(state.setores.length){
+        var det = document.createElement("details");
+        var setoresAqui = state.setores.filter(function(s){ return s.grupoId === g.id; }).length;
+        det.innerHTML = '<summary style="cursor:pointer;color:var(--ink-dim);font-size:12.5px">Setores abaixo deste chefe ('+setoresAqui+') — clique para selecionar</summary>';
+        var searchInput = document.createElement("input");
+        searchInput.type = "text";
+        searchInput.placeholder = "Filtrar setor ou supervisor...";
+        searchInput.style.marginTop = "8px";
+        var listDiv = document.createElement("div");
+        listDiv.className = "setor-check-list";
+
+        function paintList(term){
+          term = (term||"").toLowerCase();
+          listDiv.innerHTML = "";
+          state.setores
+            .filter(function(s){
+              if(!term) return true;
+              return s.nome.toLowerCase().indexOf(term)>-1 || (s.supervisor||"").toLowerCase().indexOf(term)>-1;
+            })
+            .forEach(function(s){
+              var belongsHere = s.grupoId === g.id;
+              var belongsElsewhere = s.grupoId && !belongsHere;
+              var r = document.createElement("label");
+              r.className = "setor-check-row" + (belongsElsewhere ? " taken" : "");
+              r.innerHTML =
+                '<input type="checkbox" '+(belongsHere?"checked":"")+'>' +
+                '<span><span class="scr-name">'+esc(s.nome)+'</span>' +
+                (s.supervisor ? '<span class="scr-sup">Supervisor: '+esc(s.supervisor)+'</span>' : '') +
+                '</span>';
+              r.querySelector("input").addEventListener("change", function(e){
+                s.grupoId = e.target.checked ? g.id : null;
+                save(); renderGrupos(); renderSetores();
+              });
+              listDiv.appendChild(r);
+            });
+        }
+        paintList("");
+        searchInput.addEventListener("input", function(e){ paintList(e.target.value); });
+
+        det.appendChild(searchInput);
+        det.appendChild(listDiv);
+        block.appendChild(det);
+      }
+
+      wrap.appendChild(block);
+    });
+  }
+
+  document.getElementById("addGrupoBtn").addEventListener("click", function(){
+    var nomeInput = document.getElementById("grupoNomeInput");
+    var chefeInput = document.getElementById("grupoChefeInput");
+    var nome = nomeInput.value.trim();
+    if(!nome){ nomeInput.focus(); return; }
+    state.grupos.push({id:uid(), nome:nome, chefe:chefeInput.value.trim()});
+    nomeInput.value = ""; chefeInput.value = "";
+    save(); renderGrupos(); refreshSetorGrupoOptions();
+  });
+
+  document.getElementById("preset3TurnosBtn").addEventListener("click", function(){
+    if(state.grupos.length && !confirm("Já existem turnos/edificações cadastrados. Adicionar Turno Manhã, Turno Tarde e Turno Noite mesmo assim?")) return;
+    ["Turno Manhã","Turno Tarde","Turno Noite"].forEach(function(nome){
+      state.grupos.push({id:uid(), nome:nome, chefe:""});
+    });
+    if(!state.coord.enabled){
+      state.coord.enabled = true;
+      coordEnabled.checked = true;
+      coordNameWrap.style.display = "block";
+    }
+    save(); renderGrupos(); refreshSetorGrupoOptions();
+  });
+
+  function refreshSetorGrupoOptions(){
+    var wrap = document.getElementById("setorGrupoWrap");
+    var sel = document.getElementById("setorGrupoInput");
+    wrap.style.display = state.grupos.length ? "block" : "none";
+    sel.innerHTML = '<option value="">— sem turno/edificação —</option>' +
+      state.grupos.map(function(g){ return '<option value="'+g.id+'">'+esc(g.nome)+'</option>'; }).join("");
+    document.getElementById("applyAllShiftsWrap").style.display = state.grupos.length ? "flex" : "none";
+  }
+
+  // ---------- SETORES ----------
+  function addSetor(nome, grupoId){
+    nome = (nome||"").trim();
+    if(!nome) return;
+    state.setores.push({id:uid(), nome:nome, grupoId:grupoId||null, lider:"", supervisor:"", brigadistas:[]});
+  }
+
+  document.getElementById("addSetorBtn").addEventListener("click", function(){
+    var input = document.getElementById("setorNomeInput");
+    var grupoSel = document.getElementById("setorGrupoInput");
+    var applyAll = document.getElementById("applyAllShiftsChk").checked && state.grupos.length;
+    if(!input.value.trim()){ input.focus(); return; }
+    if(applyAll){
+      state.grupos.forEach(function(g){ addSetor(input.value, g.id); });
+    } else {
+      addSetor(input.value, grupoSel.value || null);
+    }
+    input.value = "";
+    save(); renderSetores();
+  });
+
+  document.getElementById("bulkAddBtn").addEventListener("click", function(){
+    var ta = document.getElementById("bulkSetores");
+    var lines = ta.value.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
+    var grupoSel = document.getElementById("setorGrupoInput");
+    var applyAll = document.getElementById("applyAllShiftsChk").checked && state.grupos.length;
+    lines.forEach(function(l){
+      if(applyAll){
+        state.grupos.forEach(function(g){ addSetor(l, g.id); });
+      } else {
+        addSetor(l, grupoSel.value || null);
+      }
+    });
+    ta.value = "";
+    save(); renderSetores();
+  });
+
+  function grupoLabel(grupoId){
+    var g = state.grupos.find(function(x){ return x.id === grupoId; });
+    return g ? g.nome : null;
+  }
+
+  function renderSetores(){
+    var wrap = document.getElementById("setoresList");
+    wrap.innerHTML = "";
+    if(state.setores.length === 0){
+      wrap.innerHTML = '<div class="empty">Nenhum setor cadastrado ainda. Carregue a planilha na aba 1, ou adicione setores manualmente acima.</div>';
+      return;
+    }
+    state.setores.forEach(function(s){
+      var card = document.createElement("div");
+      card.className = "setor-card";
+
+      var head = document.createElement("div");
+      head.className = "setor-head";
+      var glabel = grupoLabel(s.grupoId);
+      head.innerHTML =
+        '<div style="flex:1">' +
+          (glabel ? '<span class="tag">'+esc(glabel)+'</span><br>' : '') +
+          '<input type="text" class="setor-name-input" value="'+esc(s.nome)+'" style="width:100%">' +
+          (s.supervisor ? '<span class="hint" style="margin:2px 0 0">Supervisor: '+esc(s.supervisor)+'</span>' : '') +
+        '</div>' +
+        '<button class="btn-danger btn-sm" data-del-setor>Remover setor</button>';
+      head.querySelector(".setor-name-input").addEventListener("input", function(e){ s.nome = e.target.value; save(); });
+      head.querySelector("[data-del-setor]").addEventListener("click", function(){
+        if(confirm('Remover o setor "'+s.nome+'" e todos os brigadistas dele?')){
+          state.setores = state.setores.filter(function(x){ return x.id !== s.id; });
+          save(); renderSetores();
+        }
+      });
+      card.appendChild(head);
+
+      if(state.grupos.length){
+        var gsel = document.createElement("select");
+        gsel.style.marginBottom = "10px";
+        gsel.innerHTML = '<option value="">— sem turno/edificação —</option>' +
+          state.grupos.map(function(g){ return '<option value="'+g.id+'"'+(g.id===s.grupoId?" selected":"")+'>'+esc(g.nome)+'</option>'; }).join("");
+        gsel.addEventListener("change", function(){ s.grupoId = gsel.value || null; save(); renderSetores(); });
+        card.appendChild(gsel);
+      }
+
+      var infoRow = document.createElement("div");
+      infoRow.className = "row";
+      infoRow.innerHTML =
+        '<div><label>Líder do setor (item 10.2.1-b)</label><input type="text" data-f="lider" value="'+esc(s.lider)+'" placeholder="Nome do líder do setor"></div>' +
+        '<div><label>Supervisor (referência)</label><input type="text" data-f="supervisor" value="'+esc(s.supervisor||"")+'" placeholder="Nome do supervisor da área"></div>';
+      infoRow.querySelector('[data-f="lider"]').addEventListener("input", function(e){ s.lider = e.target.value; save(); });
+      infoRow.querySelector('[data-f="supervisor"]').addEventListener("input", function(e){ s.supervisor = e.target.value; save(); renderGrupos(); });
+      card.appendChild(infoRow);
+
+      var brigList = document.createElement("div");
+      brigList.className = "brig-list";
+      brigList.innerHTML = '<h3>Brigadistas do setor ('+s.brigadistas.length+')</h3>';
+      if(s.brigadistas.length === 0){
+        brigList.innerHTML += '<p class="hint" style="margin:0">Nenhum brigadista ainda.</p>';
+      }
+      s.brigadistas.forEach(function(b){
+        brigList.appendChild(renderBrigadistaItem(s, b));
+      });
+      var pickerRow = document.createElement("div");
+      pickerRow.className = "picker-row";
+      var pickerInput = document.createElement("input");
+      pickerInput.type = "text";
+      pickerInput.setAttribute("list", "presetNamesList");
+      pickerInput.placeholder = "Selecione da lista ou digite um nome novo...";
+      var pickerBtn = document.createElement("button");
+      pickerBtn.className = "btn-amber btn-sm";
+      pickerBtn.textContent = "+ Adicionar brigadista";
+      pickerBtn.addEventListener("click", function(){
+        addBrigadistaToSetor(s, pickerInput.value);
+        pickerInput.value = "";
+        save(); renderSetores();
+      });
+      pickerInput.addEventListener("keydown", function(e){ if(e.key === "Enter"){ e.preventDefault(); pickerBtn.click(); } });
+      pickerRow.appendChild(pickerInput);
+      pickerRow.appendChild(pickerBtn);
+      brigList.appendChild(pickerRow);
+      card.appendChild(brigList);
+
+      wrap.appendChild(card);
+    });
+  }
+
+  function renderBrigadistaItem(setor, b){
+    var item = document.createElement("div");
+    item.className = "brig-item";
+
+    var row1 = document.createElement("div");
+    row1.className = "row";
+    row1.innerHTML =
+      '<div><label>Nome</label><input type="text" data-f="nome" value="'+esc(b.nome)+'" placeholder="Nome completo"></div>' +
+      '<div><label>Função</label><input type="text" data-f="funcao" value="'+esc(b.funcao||"")+'" placeholder="Cargo/função"></div>' +
+      '<div><label>Tipo</label><select data-f="tipo">' +
+        '<option value="organico"'+(b.tipo==="organico"?" selected":"")+'>Brigadista orgânico</option>' +
+        '<option value="profissional"'+(b.tipo==="profissional"?" selected":"")+'>Brigadista profissional</option>' +
+      '</select></div>';
+    item.appendChild(row1);
+
+    if(b.tipo === "profissional"){
+      var exRow = document.createElement("div");
+      exRow.className = "checkrow";
+      exRow.innerHTML = '<input type="checkbox" '+(b.exclusiva?"checked":"")+' data-f="exclusiva"><label>Dedicação exclusiva à brigada</label>';
+      exRow.querySelector("input").addEventListener("change", function(e){ b.exclusiva = e.target.checked; save(); });
+      item.appendChild(exRow);
+    }
+
+    var compLabel = document.createElement("label");
+    compLabel.textContent = "Cursos especialistas";
+    item.appendChild(compLabel);
+    var compGrid = document.createElement("div");
+    compGrid.className = "comp-grid";
+    COMP_MODULES.forEach(function(m){
+      var chip = document.createElement("label");
+      chip.className = "comp-chip" + (b.comp[m.id] ? " checked" : "");
+      chip.innerHTML = '<input type="checkbox" '+(b.comp[m.id]?"checked":"")+'> '+esc(m.label);
+      chip.querySelector("input").addEventListener("change", function(e){
+        b.comp[m.id] = e.target.checked;
+        save(); renderSetores();
+      });
+      compGrid.appendChild(chip);
+    });
+    item.appendChild(compGrid);
+
+    var delBtn = document.createElement("button");
+    delBtn.className = "btn-danger btn-sm";
+    delBtn.textContent = "Remover brigadista";
+    delBtn.style.marginTop = "6px";
+    delBtn.addEventListener("click", function(){
+      setor.brigadistas = setor.brigadistas.filter(function(x){ return x.id !== b.id; });
+      save(); renderSetores();
+    });
+    item.appendChild(delBtn);
+
+    item.querySelector('[data-f="nome"]').addEventListener("input", function(e){ b.nome = e.target.value; save(); renderSetores(); });
+    item.querySelector('[data-f="funcao"]').addEventListener("input", function(e){ b.funcao = e.target.value; save(); });
+    item.querySelector('[data-f="tipo"]').addEventListener("change", function(e){ b.tipo = e.target.value; save(); renderSetores(); });
+
+    return item;
+  }
+
+  // ---------- CONTROLE DE BRIGADISTAS (tabela plana) ----------
+  var ctlFilterCourse = null;
+  var ctlSearch = "";
+
+  function allBrigadistasFlat(){
+    var list = [];
+    state.setores.forEach(function(s){
+      s.brigadistas.forEach(function(b){ list.push({b:b, setor:s}); });
+    });
+    return list;
+  }
+
+  function renderCtlFilters(){
+    var wrap = document.getElementById("ctlFilters");
+    wrap.innerHTML = "";
+    var allChip = document.createElement("label");
+    allChip.className = "filter-chip" + (ctlFilterCourse===null?" active":"");
+    allChip.innerHTML = "Todos";
+    allChip.addEventListener("click", function(){ ctlFilterCourse = null; renderControle(); });
+    wrap.appendChild(allChip);
+    COMP_MODULES.slice(0,4).forEach(function(m){
+      var chip = document.createElement("label");
+      chip.className = "filter-chip" + (ctlFilterCourse===m.id?" active":"");
+      chip.textContent = m.label;
+      chip.addEventListener("click", function(){ ctlFilterCourse = (ctlFilterCourse===m.id?null:m.id); renderControle(); });
+      wrap.appendChild(chip);
+    });
+  }
+
+  function renderControle(){
+    renderCtlFilters();
+    var table = document.getElementById("ctlTable");
+    var all = allBrigadistasFlat();
+
+    if(all.length === 0){
+      table.innerHTML = "";
+      table.parentElement.innerHTML = '<div class="empty">Carregue a planilha na aba 1, ou cadastre brigadistas na aba 2, para usar o controle.</div>';
+      return;
+    }
+
+    var term = ctlSearch.trim().toLowerCase();
+    var filtered = all.filter(function(x){
+      if(ctlFilterCourse && !x.b.comp[ctlFilterCourse]) return false;
+      if(term && x.b.nome.toLowerCase().indexOf(term) === -1) return false;
+      return true;
+    });
+
+    var html = "<thead><tr><th>Nome</th><th>Função</th><th>Setor (mover)</th><th>Status</th><th>Cursos</th><th></th></tr></thead><tbody>";
+    filtered.forEach(function(x){
+      var b = x.b, curSetor = x.setor;
+      var statusClass = b.status === "Afastamento" ? "status-afastamento" : "status-ativo";
+      html +=
+        '<tr data-bid="'+b.id+'" data-setorid="'+curSetor.id+'">' +
+        '<td><input type="text" data-f="nome" value="'+esc(b.nome)+'"></td>' +
+        '<td><input type="text" data-f="funcao" value="'+esc(b.funcao||"")+'"></td>' +
+        '<td><select data-f="mover">' + state.setores.map(function(s){
+            var glabel = grupoLabel(s.grupoId) || "sem turno";
+            var supTxt = s.supervisor ? (" · Sup: "+s.supervisor) : "";
+            return '<option value="'+s.id+'"'+(s.id===curSetor.id?" selected":"")+'>'+esc(s.nome)+' — '+esc(glabel)+esc(supTxt)+'</option>';
+          }).join("") + '</select></td>' +
+        '<td><span class="status-tag '+statusClass+'">'+esc(b.status||"Ativo")+'</span></td>' +
+        '<td><div class="comp-cell">' + COMP_MODULES.slice(0,4).map(function(m){
+            return '<button type="button" data-comp="'+m.id+'" class="'+(b.comp[m.id]?"on":"")+'" title="'+esc(m.label)+'">'+m.label.split(" ")[0].slice(0,4).toUpperCase()+'</button>';
+          }).join("") + '</div></td>' +
+        '<td><button type="button" class="btn-danger btn-sm" data-del="1">Remover</button></td>' +
+        '</tr>';
+    });
+    html += "</tbody>";
+    table.innerHTML = html;
+    table.parentElement.innerHTML = "";
+    table.parentElement.appendChild(table);
+    if(!table.parentElement.contains(table)){}
+
+    // re-fetch after innerHTML reset above (table itself untouched, just ensure wrap holds it)
+    var wrapEl = document.querySelector("#tab-controle .table-wrap");
+    wrapEl.innerHTML = "";
+    wrapEl.appendChild(table);
+
+    table.querySelectorAll("tbody tr").forEach(function(tr){
+      var bid = tr.dataset.bid, setorId = tr.dataset.setorid;
+      var setorObj = state.setores.find(function(s){ return s.id === setorId; });
+      var brigObj = setorObj.brigadistas.find(function(x){ return x.id === bid; });
+
+      tr.querySelector('[data-f="nome"]').addEventListener("input", function(e){ brigObj.nome = e.target.value; save(); });
+      tr.querySelector('[data-f="funcao"]').addEventListener("input", function(e){ brigObj.funcao = e.target.value; save(); });
+      tr.querySelector('[data-f="mover"]').addEventListener("change", function(e){
+        var destId = e.target.value;
+        if(destId === setorId) return;
+        var dest = state.setores.find(function(s){ return s.id === destId; });
+        setorObj.brigadistas = setorObj.brigadistas.filter(function(x){ return x.id !== bid; });
+        dest.brigadistas.push(brigObj);
+        save(); renderControle(); renderSetores();
+      });
+      tr.querySelectorAll('[data-comp]').forEach(function(btn){
+        btn.addEventListener("click", function(){
+          var key = btn.dataset.comp;
+          brigObj.comp[key] = !brigObj.comp[key];
+          save(); renderControle();
+        });
+      });
+      tr.querySelector('[data-del]').addEventListener("click", function(){
+        if(!confirm('Remover "'+brigObj.nome+'" da brigada?')) return;
+        setorObj.brigadistas = setorObj.brigadistas.filter(function(x){ return x.id !== bid; });
+        save(); renderControle(); renderSetores();
+      });
+    });
+  }
+
+  document.getElementById("ctlSearch").addEventListener("input", function(e){
+    ctlSearch = e.target.value;
+    renderControle();
+  });
+
+  // ---------- ORGANOGRAMA ----------
+  function orgNode(role, name, dim){
+    var div = document.createElement("div");
+    div.className = "org-node" + (dim ? " dim" : "");
+    div.innerHTML = '<span class="role">'+esc(role)+'</span><span class="name">'+esc(name || "(a definir)")+'</span>';
+    return div;
+  }
+
+  function brigChip(b){
+    var span = document.createElement("span");
+    span.className = "org-brig";
+    var typeTag = b.tipo === "profissional" ? "PROF" : "ORG";
+    var compCount = COMP_MODULES.filter(function(m){ return b.comp[m.id]; }).length;
+    span.innerHTML = esc(b.nome || "(sem nome)") + ' <span class="badge">'+typeTag+(compCount?" · +"+compCount:"")+'</span>';
+    return span;
+  }
+
+  function setorColumn(s, compact){
+    var col = document.createElement("div");
+    col.className = "org-col";
+    col.appendChild(orgNode("Líder de setor — " + s.nome, s.lider));
+    if(compact){
+      var cnt = document.createElement("div");
+      cnt.className = "org-count";
+      cnt.textContent = s.brigadistas.length + " brigadista" + (s.brigadistas.length===1?"":"s");
+      col.appendChild(cnt);
+    } else {
+      var briglist = document.createElement("div");
+      briglist.className = "org-brig-list";
+      if(s.brigadistas.length === 0){
+        var none = document.createElement("span");
+        none.className = "org-brig";
+        none.textContent = "sem brigadistas cadastrados";
+        briglist.appendChild(none);
+      } else {
+        s.brigadistas.forEach(function(b){ briglist.appendChild(brigChip(b)); });
+      }
+      col.appendChild(briglist);
+    }
+    return col;
+  }
+
+  function renderOrg(){
+    var wrap = document.getElementById("orgWrap");
+    wrap.innerHTML = "";
+    if(state.setores.length === 0){
+      wrap.innerHTML = '<div class="empty">Carregue a planilha na aba 1, ou cadastre setores na aba 2, para gerar o organograma.</div>';
+      return;
+    }
+    var totalBrig = state.setores.reduce(function(a,s){ return a+s.brigadistas.length; }, 0);
+    var compactChk = document.getElementById("orgCompactChk");
+    if(!compactChk.dataset.touched){ compactChk.checked = totalBrig > 60; }
+    var compact = compactChk.checked;
+
+    var tree = document.createElement("div");
+    tree.className = "org-tree";
+
+    var hasCoord = state.coord.enabled;
+    var groupsUsed = state.grupos.filter(function(g){
+      return state.setores.some(function(s){ return s.grupoId === g.id; });
+    });
+    var ungroupedSetores = state.setores.filter(function(s){ return !s.grupoId || !groupsUsed.find(function(g){return g.id===s.grupoId;}); });
+
+    if(hasCoord){
+      tree.appendChild(orgNode("Chefe da brigada", state.coord.nome));
+    }
+
+    var secondRow = document.createElement("div");
+    secondRow.className = "org-row" + ((groupsUsed.length + (ungroupedSetores.length?1:0)) <= 1 ? " single" : " wrap");
+
+    groupsUsed.forEach(function(g){
+      var col = document.createElement("div");
+      col.className = "org-col";
+      col.appendChild(orgNode("Chefe — " + g.nome, g.chefe));
+      var setoresRow = document.createElement("div");
+      var setoresDoGrupo = state.setores.filter(function(s){return s.grupoId===g.id;});
+      setoresRow.className = "org-row wrap" + (setoresDoGrupo.length<=1 ? " single":"");
+      setoresDoGrupo.forEach(function(s){
+        setoresRow.appendChild(setorColumn(s, compact));
+      });
+      col.appendChild(setoresRow);
+      secondRow.appendChild(col);
+    });
+
+    if(ungroupedSetores.length){
+      if(groupsUsed.length){
+        var col2 = document.createElement("div");
+        col2.className = "org-col";
+        col2.appendChild(orgNode("Setores sem turno vinculado", "", true));
+        var row2 = document.createElement("div");
+        row2.className = "org-row wrap" + (ungroupedSetores.length<=1?" single":"");
+        ungroupedSetores.forEach(function(s){ row2.appendChild(setorColumn(s, compact)); });
+        col2.appendChild(row2);
+        secondRow.appendChild(col2);
+      } else {
+        ungroupedSetores.forEach(function(s){ secondRow.appendChild(setorColumn(s, compact)); });
+      }
+    }
+
+    if(!hasCoord && !groupsUsed.length){
+      secondRow.classList.remove("org-row");
+      secondRow.style.display = "flex";
+      secondRow.style.gap = "26px";
+      secondRow.style.flexWrap = "wrap";
+      secondRow.style.justifyContent = "center";
+    }
+
+    tree.appendChild(secondRow);
+    wrap.appendChild(tree);
+  }
+
+  document.getElementById("orgCompactChk").addEventListener("change", function(){
+    this.dataset.touched = "1";
+    renderOrg();
+  });
+
+  // ---------- RELATÓRIO POR CURSO ----------
+  function allBrigadistas(){
+    var list = [];
+    state.setores.forEach(function(s){
+      s.brigadistas.forEach(function(b){
+        list.push({b:b, setor:s.nome, turno: grupoLabel(s.grupoId) || "—"});
+      });
+    });
+    return list;
+  }
+
+  function renderComp(){
+    var wrap = document.getElementById("compReport");
+    var all = allBrigadistas();
+    if(all.length === 0){
+      wrap.innerHTML = '<div class="empty">Carregue a planilha ou cadastre brigadistas para ver este relatório.</div>';
+      return;
+    }
+    var html = "";
+    COMP_MODULES.forEach(function(m){
+      var withMod = all.filter(function(x){ return x.b.comp[m.id]; });
+      html += '<div class="mod-block"><h3>'+esc(m.label)+' <span class="count">('+withMod.length+' brigadista'+(withMod.length===1?"":"s")+')</span></h3>';
+      if(withMod.length === 0){
+        html += '<p class="hint" style="margin:0">Nenhum brigadista com este curso.</p>';
+      } else {
+        html += withMod.map(function(x){
+          return '<span class="pill">'+esc(x.b.nome||"(sem nome)")+' — '+esc(x.setor)+' ('+esc(x.turno)+')</span>';
+        }).join("");
+      }
+      html += '</div>';
+    });
+
+    var semComplementar = all.filter(function(x){
+      return COMP_MODULES.slice(0,4).every(function(m){ return !x.b.comp[m.id]; });
+    });
+    html += '<div class="mod-block"><h3>Sem nenhum curso especialista <span class="count">('+semComplementar.length+')</span></h3>';
+    if(semComplementar.length === 0){
+      html += '<p class="hint" style="margin:0">Todos os brigadistas têm ao menos um curso especialista.</p>';
+    } else {
+      html += semComplementar.map(function(x){
+        return '<span class="pill">'+esc(x.b.nome||"(sem nome)")+' — '+esc(x.setor)+'</span>';
+      }).join("");
+    }
+    html += '</div>';
+
+    wrap.innerHTML = html;
+  }
+
+  // ---------- PRINT ----------
+  document.getElementById("printOrgBtn").addEventListener("click", function(){
+    document.getElementById("tab-organograma").classList.add("print-target");
+    window.print();
+    setTimeout(function(){ document.getElementById("tab-organograma").classList.remove("print-target"); }, 500);
+  });
+  document.getElementById("printCompBtn").addEventListener("click", function(){
+    document.getElementById("tab-complementar").classList.add("print-target");
+    window.print();
+    setTimeout(function(){ document.getElementById("tab-complementar").classList.remove("print-target"); }, 500);
+  });
+  document.getElementById("printAllBtn").addEventListener("click", function(){
+    renderOrg(); renderComp(); renderControle();
+    ["tab-organograma","tab-complementar","tab-controle"].forEach(function(id){
+      document.getElementById(id).classList.add("print-target");
+    });
+    window.print();
+    setTimeout(function(){
+      ["tab-organograma","tab-complementar","tab-controle"].forEach(function(id){
+        document.getElementById(id).classList.remove("print-target");
+      });
+    }, 500);
+  });
+
+  // ---------- EXPORTAR EXCEL ----------
+  document.getElementById("exportExcelBtn").addEventListener("click", function(){
+    if(typeof XLSX === "undefined"){ alert("A biblioteca de Excel não carregou (verifique a conexão) — tente novamente."); return; }
+    var rows = [["Matrícula","Nome","Função","Turno","Setor","Líder do setor","Status","Tipo","Resgate altura","Resgate espaço confinado","Resgate produtos químicos","Sistema de comando (SCI)","Proteção respiratória","Desencarceramento"]];
+    state.setores.forEach(function(s){
+      var turno = grupoLabel(s.grupoId) || "";
+      s.brigadistas.forEach(function(b){
+        rows.push([
+          b.matricula||"", b.nome||"", b.funcao||"", turno, s.nome, s.lider||"", b.status||"Ativo",
+          b.tipo==="profissional"?"Profissional":"Orgânico",
+          b.comp.altura?"Sim":"Não", b.comp.confinado?"Sim":"Não", b.comp.perigosos?"Sim":"Não",
+          b.comp.sci?"Sim":"Não", b.comp.resp?"Sim":"Não", b.comp.desencarce?"Sim":"Não"
+        ]);
+      });
+    });
+    var wb = XLSX.utils.book_new();
+    var ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:10},{wch:28},{wch:22},{wch:14},{wch:24},{wch:20},{wch:12},{wch:12},{wch:14},{wch:16},{wch:16},{wch:14},{wch:14},{wch:14}];
+    XLSX.utils.book_append_sheet(wb, ws, "Brigadistas");
+
+    var estrutura = [["Chefe da brigada", state.coord.enabled ? (state.coord.nome||"(a definir)") : "(não definido)"],[""],["Turno/Edificação","Chefe"]];
+    state.grupos.forEach(function(g){ estrutura.push([g.nome, g.chefe||"(a definir)"]); });
+    var ws2 = XLSX.utils.aoa_to_sheet(estrutura);
+    XLSX.utils.book_append_sheet(wb, ws2, "Estrutura");
+
+    XLSX.writeFile(wb, "brigada-incendio-npt017.xlsx");
+  });
+
+  // ---------- EXPORT / IMPORT / RESET JSON ----------
+  document.getElementById("exportJsonBtn").addEventListener("click", function(){
+    var blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "organograma-brigada-npt017.json";
+    a.click();
+  });
+  document.getElementById("importJsonBtn").addEventListener("click", function(){
+    document.getElementById("importFile").click();
+  });
+  document.getElementById("importFile").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var parsed = JSON.parse(reader.result);
+        state = parsed;
+        save(); renderAll();
+      }catch(err){
+        alert("Arquivo inválido. Selecione um .json exportado por este gerador.");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  });
+  document.getElementById("resetBtn").addEventListener("click", function(){
+    if(confirm("Isso vai apagar toda a estrutura, setores e brigadistas cadastrados neste dispositivo. Confirmar?")){
+      state = {coord:{enabled:false, nome:""}, grupos:[], setores:[]};
+      save(); renderAll();
+    }
+  });
+
+  function esc(s){
+    return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  function renderAll(){
+    coordEnabled.checked = !!state.coord.enabled;
+    coordNome.value = state.coord.nome || "";
+    coordNameWrap.style.display = state.coord.enabled ? "block" : "none";
+    renderGrupos();
+    refreshSetorGrupoOptions();
+    renderSetores();
+    renderOrg();
+    renderComp();
+    renderControle();
+  }
+
+  buildPresetNamesList();
+  load();
+  renderAll();
+})();
+</script>
+</body>
+</html>
