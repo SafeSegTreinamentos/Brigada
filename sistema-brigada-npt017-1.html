@@ -1,0 +1,2234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sistema de Gestão de Brigada — NPT-017</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --amber:#F59E0B; --amber-dark:#B45309;
+  --graphite:#14171B; --graphite-2:#1E2228; --graphite-3:#272C33;
+  --line:#343A42; --ink:#F4F5F6; --ink-dim:#A7ADB5;
+  --danger:#E4574C; --ok:#4CAF7D;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+html,body{height:100%;}
+body{margin:0;background:var(--graphite);color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+h1,h2,h3,.display{font-family:'Bebas Neue',sans-serif;letter-spacing:.03em;font-weight:400;}
+.hazard{height:8px;background:repeating-linear-gradient(135deg,var(--amber) 0 14px,var(--graphite-2) 14px 28px);}
+header.top{padding:22px 20px 18px;border-bottom:1px solid var(--line);}
+header.top .eyebrow{color:var(--amber);font-size:13px;font-weight:700;margin:0 0 4px;}
+header.top h1{font-size:27px;margin:0 0 6px;line-height:1;}
+header.top p{margin:0;color:var(--ink-dim);font-size:13.5px;max-width:64ch;line-height:1.5;}
+main{padding:18px 16px 90px;max-width:1120px;margin:0 auto;}
+.tabs{display:flex;gap:6px;margin:18px 0 14px;overflow-x:auto;padding-bottom:2px;}
+.tab-btn{flex:0 0 auto;background:var(--graphite-2);border:1px solid var(--line);color:var(--ink-dim);padding:9px 13px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.tab-btn.active{background:var(--amber);border-color:var(--amber);color:var(--graphite);}
+section.panel{display:none;}
+section.panel.active{display:block;}
+.card{background:var(--graphite-2);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px;}
+.card h2{font-size:20px;margin:0 0 10px;color:var(--amber);}
+.card h3{font-size:16px;margin:0 0 8px;font-family:'Inter',sans-serif;font-weight:700;}
+.hint{color:var(--ink-dim);font-size:12.5px;line-height:1.5;margin:0 0 12px;}
+label{display:block;font-size:12px;font-weight:600;color:var(--ink-dim);margin:0 0 4px;}
+input[type=text],input[type=date],input[type=number],input[type=email],select,textarea{
+  width:100%;background:var(--graphite-3);border:1px solid var(--line);color:var(--ink);
+  padding:10px 11px;border-radius:7px;font-size:14.5px;font-family:inherit;
+}
+textarea{min-height:90px;resize:vertical;}
+.row{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.row > div{flex:1 1 160px;}
+.checkrow{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.checkrow input{width:auto;}
+.checkrow label{margin:0;color:var(--ink);font-size:14px;font-weight:500;}
+button{font-family:inherit;cursor:pointer;border-radius:7px;border:1px solid transparent;font-weight:700;font-size:13.5px;padding:10px 16px;}
+.btn-amber{background:var(--amber);color:var(--graphite);}
+.btn-ghost{background:transparent;border-color:var(--line);color:var(--ink);}
+.btn-danger{background:transparent;border-color:var(--danger);color:var(--danger);}
+.btn-sm{padding:6px 10px;font-size:12px;}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+.empty{text-align:center;color:var(--ink-dim);font-size:13.5px;padding:26px 10px;border:1px dashed var(--line);border-radius:9px;}
+
+/* dashboard */
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;}
+.dash-card{background:var(--graphite-3);border:1px solid var(--line);border-radius:10px;padding:18px;}
+.dash-card .num{font-family:'Bebas Neue',sans-serif;font-size:42px;color:var(--amber);line-height:1;}
+.dash-card .lbl{font-size:12.5px;color:var(--ink-dim);margin-top:4px;}
+.dash-sub{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;}
+.dash-pill{font-size:11.5px;padding:3px 9px;border-radius:20px;font-weight:700;}
+.dp-ok{background:rgba(76,175,125,.18);color:var(--ok);}
+.dp-warn{background:rgba(245,158,11,.18);color:var(--amber);}
+.dp-bad{background:rgba(228,87,76,.18);color:var(--danger);}
+.dp-none{background:var(--graphite);color:var(--ink-dim);}
+
+.setor-card{border:1px solid var(--line);border-radius:9px;padding:13px;margin-bottom:12px;background:var(--graphite-3);}
+.setor-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;}
+.setor-head .tag{display:inline-block;background:var(--amber);color:var(--graphite);font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:5px;margin-bottom:4px;}
+.setor-name-input{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:.02em;padding:6px 9px;}
+.brig-list{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;}
+.brig-item{background:var(--graphite-2);border:1px solid var(--line);border-radius:7px;padding:12px;margin-bottom:10px;}
+.brig-item .row{margin-bottom:8px;}
+.status-tag{display:inline-block;font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:4px;margin-left:6px;vertical-align:middle;}
+.status-ativo{background:rgba(76,175,125,.18);color:var(--ok);}
+.status-afastamento{background:rgba(228,87,76,.18);color:var(--danger);}
+.treino-row{display:flex;align-items:center;gap:10px;background:var(--graphite-3);border:1px solid var(--line);border-radius:7px;padding:8px 10px;margin-bottom:6px;flex-wrap:wrap;}
+.treino-row .tname{flex:1 1 200px;font-size:13px;font-weight:600;}
+.treino-row .thoras{font-size:11px;color:var(--ink-dim);}
+.treino-row input[type=date]{flex:0 0 150px;font-size:12.5px;padding:6px 8px;}
+.tstatus{display:inline-block;font-size:10px;font-weight:800;padding:3px 8px;border-radius:5px;white-space:nowrap;}
+.tstatus-ok{background:rgba(76,175,125,.18);color:var(--ok);}
+.tstatus-warn{background:rgba(245,158,11,.18);color:var(--amber);}
+.tstatus-bad{background:rgba(228,87,76,.18);color:var(--danger);}
+.tstatus-none{background:var(--graphite);color:var(--ink-dim);}
+
+.setor-check-list{max-height:280px;overflow-y:auto;border:1px solid var(--line);border-radius:7px;padding:8px;margin-top:8px;background:var(--graphite-3);}
+.picker-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+.picker-row input{flex:1 1 200px;}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);}
+th{color:var(--amber);font-size:11px;text-transform:uppercase;letter-spacing:.03em;}
+.mod-block{margin-bottom:18px;}
+.mod-block h3{color:var(--amber);}
+.mod-block .count{color:var(--ink-dim);font-weight:400;font-size:13px;}
+.pill{display:inline-block;background:var(--graphite-3);border:1px solid var(--line);border-radius:5px;padding:2px 8px;font-size:12px;margin:2px 4px 2px 0;}
+.chefe-group-header{margin:8px 0 4px;padding:6px 10px;border-radius:6px;border-left:4px solid var(--amber);font-size:13px;font-weight:700;}
+.equipe-table-wrap{max-height:340px;overflow-y:auto;border:1px solid var(--line);border-radius:7px;margin:0 0 14px;}
+.equipe-table-wrap table{font-size:13px;}
+.trained-tag{display:inline-block;font-size:10px;font-weight:800;padding:1px 6px;border-radius:4px;background:rgba(76,175,125,.18);color:var(--ok);margin-left:6px;}
+
+.controle-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:flex-end;}
+.controle-toolbar > div{flex:1 1 150px;}
+.filter-chip{display:inline-flex;align-items:center;gap:5px;background:var(--graphite-3);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:12.5px;cursor:pointer;color:var(--ink-dim);}
+.filter-chip.active{border-color:var(--amber);color:var(--amber);background:rgba(245,158,11,.12);}
+.table-wrap{overflow-x:auto;}
+.controle-table select,.controle-table input[type=text]{font-size:12.5px;padding:6px 7px;min-width:110px;}
+.comp-cell{display:flex;gap:3px;flex-wrap:wrap;}
+.comp-cell button{padding:3px 6px;font-size:10.5px;border-radius:4px;font-weight:800;background:var(--graphite-3);border:1px solid var(--line);color:var(--ink-dim);}
+.comp-cell button.on{background:var(--amber);border-color:var(--amber);color:var(--graphite);}
+
+.org-wrap{overflow-x:auto;padding:20px 10px 10px;}
+#orgSvg{touch-action:none;}
+#orgSvg g:hover rect{filter:brightness(1.06);}
+#orgViewport{will-change:transform;}
+.org-wrap:fullscreen,.org-wrap:-webkit-full-screen{background:#fff;display:flex;align-items:center;justify-content:center;overflow:auto;padding:20px;}
+.org-wrap:fullscreen #orgSvg,.org-wrap:-webkit-full-screen #orgSvg{width:auto !important;height:92vh !important;max-width:98vw;}
+
+.floatbar{position:fixed;bottom:0;left:0;right:0;background:var(--graphite-2);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.savedmsg{font-size:11.5px;color:var(--ok);text-align:center;margin-top:6px;min-height:14px;}
+
+@media (max-width:520px){
+  header.top h1{font-size:22px;}
+  .row > div{flex:1 1 100%;}
+}
+
+@media print{
+  header.top,.tabs,.floatbar,.no-print,.card > .actions,.setor-head button,.brig-item button,.controle-toolbar,.controle-table select,.controle-table button{display:none !important;}
+  body{background:#fff;color:#111;}
+  section.panel{display:none !important;}
+  section.panel.print-target{display:block !important;page-break-before:always;}
+  section.panel.print-target:first-of-type{page-break-before:auto;}
+  .card{background:#fff;border-color:#ccc;}
+  .org-wrap{overflow:visible !important;padding:0 !important;}
+  #orgSvg{width:100% !important;height:auto !important;max-width:100% !important;}
+  #orgViewport{transform:none !important;}
+  main{padding-bottom:20px;}
+  table{color:#111;}
+  th{color:#B45309;}
+  .controle-table input[type=text]{border:none;background:none;color:#111;padding:0;}
+  .pill{background:#F3F4F6;border-color:#ccc;color:#111;}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <p class="eyebrow">SAFESEG · SISTEMA DE GESTÃO DE BRIGADA · NPT-017</p>
+  <h1>Sistema de Gestão de Brigada de Incêndio</h1>
+  <p>Suba a planilha de brigadistas, monte a estrutura (coordenador → chefes → setores), acompanhe os treinamentos e gere o organograma. Tudo num único arquivo, offline.</p>
+</header>
+
+<div class="hazard"></div>
+
+<main>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="painel">Painel</button>
+    <button class="tab-btn" data-tab="setup">Estrutura</button>
+    <button class="tab-btn" data-tab="setores">Setores e Brigadistas</button>
+    <button class="tab-btn" data-tab="controle">Controle</button>
+    <button class="tab-btn" data-tab="organograma">Organograma</button>
+    <button class="tab-btn" data-tab="complementar">Cursos Especialistas</button>
+    <button class="tab-btn" data-tab="equipes">Equipes de Resgate</button>
+    <button class="tab-btn" data-tab="basica">Treinamento Básico</button>
+    <button class="tab-btn" data-tab="indicador">Indicador de Funcionalidade</button>
+  </div>
+
+  <!-- TAB PAINEL -->
+  <section class="panel active" id="tab-painel">
+    <div class="card">
+      <h2>Indicadores gerais</h2>
+      <p class="hint">Visão geral da brigada: quantas pessoas, quantas com cada treinamento em dia, e o que precisa de atenção.</p>
+      <div id="dashGeral" class="dash-grid"></div>
+    </div>
+    <div class="card">
+      <h2>Treinamentos</h2>
+      <p class="hint">Validade considerada: <b id="dashValidadeTxt">12 meses</b> a partir da data de conclusão (ajustável na aba Estrutura).</p>
+      <div id="dashTreinos" class="dash-grid"></div>
+    </div>
+    <div class="card" id="dashAvisos"></div>
+    <div class="actions no-print"><button class="btn-ghost" id="printPainelBtn">🖶 Imprimir / PDF</button></div>
+  </section>
+
+  <!-- TAB ESTRUTURA -->
+  <section class="panel" id="tab-setup">
+    <div class="card">
+      <h2>Importar planilha de brigadistas</h2>
+      <p class="hint">Baixe o modelo, preencha e importe de volta. Nas colunas de treinamento, aceito <b>Válido</b>/<b>N/A</b>, <b>Sim</b>/<b>Não</b>, ou a data de conclusão — o que você já usa serve. Setores citados na planilha são criados automaticamente; os brigadistas somam aos já cadastrados (não substitui nada).</p>
+      <div class="actions">
+        <button class="btn-ghost" id="downloadTemplateBtn">⇩ Baixar modelo de planilha (.xlsx)</button>
+        <button class="btn-amber" id="importSheetBtn">⇧ Importar planilha preenchida</button>
+      </div>
+      <input type="file" id="importSheetFile" accept=".xlsx,.xls,.csv" style="display:none">
+    </div>
+
+    <div class="card">
+      <h2>Sincronização em nuvem</h2>
+      <p class="hint">Já vem ligada por padrão neste sistema — todo mundo que abrir este site lê e grava na mesma planilha do Google. Se quiser usar outra nuvem, cole outra URL de Apps Script abaixo; se quiser desligar e usar só este dispositivo, apague o campo e clique em "Salvar URL e testar".</p>
+      <div class="row">
+        <div><label for="cloudUrlInput">URL do Apps Script (Web App)</label><input type="text" id="cloudUrlInput" placeholder="https://script.google.com/macros/s/.../exec"></div>
+      </div>
+      <div class="actions">
+        <button class="btn-amber" id="cloudSaveBtn">Salvar URL e testar</button>
+        <button class="btn-ghost" id="cloudPullBtn">⇩ Carregar da nuvem agora</button>
+        <button class="btn-ghost" id="cloudPushBtn">⇧ Enviar para a nuvem agora</button>
+      </div>
+      <p class="hint" id="cloudStatus" style="margin:8px 0 0">&nbsp;</p>
+    </div>
+
+    <div class="card">
+      <h2>Validade dos treinamentos</h2>
+      <p class="hint">Usada para calcular se um treinamento está válido, vencendo ou vencido, a partir da data de conclusão informada.</p>
+      <div class="row" style="margin-bottom:0">
+        <div style="max-width:220px"><label for="validadeMesesInput">Validade (meses)</label><input type="number" id="validadeMesesInput" min="1" max="60" value="12"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Estrutura: Coordenador → Chefe</h2>
+      <p class="hint">Hierarquia simples: um coordenador no topo, e um ou mais chefes abaixo dele — todos no mesmo nível. Cada setor é atribuído a um chefe na próxima aba.</p>
+    </div>
+
+    <div class="card">
+      <h2>Coordenador</h2>
+      <div class="checkrow">
+        <input type="checkbox" id="coordEnabled">
+        <label for="coordEnabled">Esta planta tem coordenador</label>
+      </div>
+      <div id="coordNameWrap" style="display:none">
+        <label for="coordNome">Nome do coordenador</label>
+        <input type="text" id="coordNome" placeholder="Ex.: Deverson Pomerenk">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Chefes</h2>
+      <p class="hint">Cada chefe tem a mesma hierarquia, um degrau abaixo do coordenador. Os setores da próxima aba são atribuídos a um destes chefes. Cada chefe recebe uma cor própria, usada no organograma e no relatório de cursos.</p>
+      <div id="gruposList"></div>
+      <div class="row" style="margin-top:10px">
+        <div><label for="grupoNomeInput">Área e turno</label><input type="text" id="grupoNomeInput" placeholder="Ex.: Frigorífico 1º Turno"></div>
+        <div><label for="grupoChefeInput">Nome de quem é o chefe</label><input type="text" id="grupoChefeInput" placeholder="Ex.: Nome do chefe"></div>
+      </div>
+      <div class="actions">
+        <button class="btn-amber" id="addGrupoBtn">+ Adicionar chefe</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Backup manual (.json)</h2>
+      <p class="hint">Fora da sincronização em nuvem — um arquivo à parte, pra guardar ou levar pra outro computador.</p>
+      <div class="actions">
+        <button class="btn-ghost" id="exportJsonBtn">Exportar dados (.json)</button>
+        <button class="btn-ghost" id="importJsonBtn">Importar dados</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Zona de risco</h2>
+      <p class="hint">Isso apaga tudo — coordenador, chefes, setores e brigadistas — para começar do zero.</p>
+      <div class="actions"><button class="btn-danger" id="resetAllBtn">Apagar tudo e recomeçar</button></div>
+    </div>
+  </section>
+
+  <!-- TAB SETORES -->
+  <section class="panel" id="tab-setores">
+    <div class="card">
+      <h2>Adicionar setores</h2>
+      <p class="hint">Um por vez ou colando uma lista (um por linha). Setores da planilha importada já aparecem abaixo.</p>
+      <div class="row">
+        <div><label for="setorNomeInput">Nome do setor</label><input type="text" id="setorNomeInput" placeholder="Ex.: Almoxarifado"></div>
+        <div id="setorGrupoWrap" style="display:none"><label for="setorGrupoInput">Chefe</label><select id="setorGrupoInput"></select></div>
+      </div>
+      <div class="actions"><button class="btn-amber" id="addSetorBtn">+ Adicionar setor</button></div>
+      <details style="margin-top:12px">
+        <summary style="cursor:pointer;color:var(--ink-dim);font-size:13px">Colar vários setores de uma vez</summary>
+        <div style="margin-top:10px">
+          <textarea id="bulkSetores" placeholder="Um setor por linha"></textarea>
+          <div class="actions"><button class="btn-ghost" id="bulkAddBtn">Adicionar todos</button></div>
+        </div>
+      </details>
+    </div>
+    <div class="card">
+      <div class="row" style="margin-bottom:0">
+        <div><label for="setoresSearch">Buscar por setor ou nome de brigadista</label><input type="text" id="setoresSearch" placeholder="Digite para filtrar..."></div>
+      </div>
+      <div class="actions"><button class="btn-ghost" id="printSetoresBtn">🖶 Imprimir / PDF</button></div>
+    </div>
+    <div id="setoresList"></div>
+  </section>
+
+  <!-- TAB CONTROLE -->
+  <section class="panel" id="tab-controle">
+    <div class="card">
+      <h2>Controle de brigadistas</h2>
+      <p class="hint">Lista única com todo mundo. Mude o setor de alguém no seletor da linha, e ligue/desligue treinamentos com os botões (a data fica na aba Setores). Filtre por treinamento para ver quem já tem cada um.</p>
+      <div class="controle-toolbar">
+        <div><label for="ctlSearch">Buscar por nome</label><input type="text" id="ctlSearch" placeholder="Digite um nome..."></div>
+      </div>
+      <div class="actions" id="ctlFilters" style="margin-top:0"></div>
+      <div class="actions"><button class="btn-ghost" id="printControleBtn">🖶 Imprimir / PDF</button></div>
+    </div>
+    <div class="card table-wrap"><table class="controle-table" id="ctlTable"></table></div>
+  </section>
+
+  <!-- TAB ORGANOGRAMA -->
+  <section class="panel" id="tab-organograma">
+    <div class="card">
+      <h2>Organograma da brigada</h2>
+      <p class="hint">Mapa mental: coordenador → chefes → setores. Cada chefe tem uma cor própria. Setores sem chefe aparecem à parte, para corrigir.</p>
+      <label for="orgModeSelect">Visualizar por</label>
+      <select id="orgModeSelect">
+        <option value="chefe">Chefe → Setor → Brigadistas (padrão)</option>
+        <option value="setor">Apenas por setor (sem chefes)</option>
+        <option value="cursos">Cursos especialistas completos</option>
+      </select>
+      <div class="checkrow" style="margin-top:10px">
+        <input type="checkbox" id="orgCompactChk">
+        <label for="orgCompactChk">Mostrar os nomes dos brigadistas (por padrão só mostra a contagem)</label>
+      </div>
+      <div class="actions">
+        <button class="btn-ghost btn-sm" id="zoomOutBtn">➖ Zoom</button>
+        <button class="btn-ghost btn-sm" id="zoomInBtn">➕ Zoom</button>
+        <button class="btn-ghost btn-sm" id="zoomResetBtn">↺ Centralizar</button>
+      </div>
+      <div class="actions">
+        <button class="btn-amber" id="exportPngBtn">⇩ Baixar imagem (PNG)</button>
+        <button class="btn-amber" id="exportPdfBtn">⇩ Baixar PDF (folha única, estilo pôster)</button>
+        <button class="btn-ghost" id="orgFullscreenBtn">🔍 Ver quadro geral (tela cheia)</button>
+        <button class="btn-ghost" id="printOrgBtn">🖶 Imprimir organograma</button>
+        <button class="btn-ghost" id="printAllBtn">🖶 Imprimir relatório completo</button>
+      </div>
+    </div>
+    <div class="card"><div class="org-wrap" id="orgWrap"></div></div>
+  </section>
+
+  <!-- TAB CURSOS -->
+  <section class="panel" id="tab-complementar">
+    <div class="card">
+      <h2>Brigadistas por curso especialista</h2>
+      <p class="hint">Agrupado por chefe — cada chefe com a mesma cor usada no organograma. Considera treinamento concluído e dentro da validade configurada.</p>
+      <div class="row" style="margin-bottom:0">
+        <div><label for="compSearch">Buscar por nome ou setor</label><input type="text" id="compSearch" placeholder="Digite para filtrar..."></div>
+      </div>
+      <div class="actions">
+        <button class="btn-ghost" id="printCompBtn">🖶 Imprimir esta lista</button>
+        <button class="btn-amber" id="exportExcelBtn">⇩ Exportar tudo em Excel (.xlsx)</button>
+      </div>
+    </div>
+    <div class="card" id="compReport"></div>
+  </section>
+
+  <!-- TAB EQUIPES DE RESGATE -->
+  <section class="panel" id="tab-equipes">
+    <div class="card">
+      <h2>Equipes de resgate — quem se candidatou</h2>
+      <p class="hint">Uma linha por brigadista, uma coluna por resgate — marque quem se candidatou para cada um. Agrupado por chefe, igual ao organograma. O selo "treinado" é só referência.</p>
+      <div class="row" style="margin-bottom:0">
+        <div><label for="equipesSearch">Buscar por nome ou setor</label><input type="text" id="equipesSearch" placeholder="Digite para filtrar..."></div>
+      </div>
+      <div class="actions">
+        <button class="btn-ghost" id="printEquipesBtn">🖶 Imprimir / PDF</button>
+        <button class="btn-amber" id="exportEquipesExcelBtn">⇩ Exportar Excel (.xlsx)</button>
+      </div>
+    </div>
+    <div id="equipesContent"></div>
+  </section>
+
+  <!-- TAB TREINAMENTO BÁSICO -->
+  <section class="panel" id="tab-basica">
+    <div class="card">
+      <h2>Treinamento básico — controle de funcionalidade</h2>
+      <p class="hint">Controle separado, só da Brigada Básica (32h) — a base que todo brigadista deveria ter. Marque a data de conclusão de cada um direto aqui; o status (válido/vencendo/vencido) é calculado sozinho.</p>
+      <div id="basicaResumo" class="dash-grid"></div>
+      <div class="row" style="margin-top:12px;margin-bottom:0">
+        <div><label for="basicaSearch">Buscar por nome ou setor</label><input type="text" id="basicaSearch" placeholder="Digite para filtrar..."></div>
+      </div>
+      <div class="actions">
+        <button class="btn-ghost" id="printBasicaBtn">🖶 Imprimir / PDF</button>
+        <button class="btn-amber" id="exportBasicaExcelBtn">⇩ Exportar Excel (.xlsx)</button>
+      </div>
+    </div>
+    <div id="basicaContent"></div>
+  </section>
+
+  <!-- TAB INDICADOR DE FUNCIONALIDADE -->
+  <section class="panel" id="tab-indicador">
+    <div class="card">
+      <h2>Indicador de funcionalidade</h2>
+      <p class="hint">Registre uma chamada (treinamento, simulado, reunião) marcando quem compareceu. O sistema usa isso para calcular o indicador de funcionalidade da brigada — quem realmente está ativo, não só quem está no papel.</p>
+      <div class="row">
+        <div><label for="chamadaData">Data</label><input type="date" id="chamadaData"></div>
+        <div><label for="chamadaTitulo">Título / motivo</label><input type="text" id="chamadaTitulo" placeholder="Ex.: Simulado de evacuação"></div>
+      </div>
+      <div class="actions"><button class="btn-amber" id="addChamadaBtn">+ Criar chamada</button></div>
+      <div class="row" style="margin-top:10px;margin-bottom:0">
+        <div><label for="indicadorSearch">Buscar por nome, dentro das chamadas</label><input type="text" id="indicadorSearch" placeholder="Digite para filtrar..."></div>
+      </div>
+      <div class="actions">
+        <button class="btn-ghost" id="printIndicadorBtn">🖶 Imprimir / PDF</button>
+        <button class="btn-amber" id="exportIndicadorExcelBtn">⇩ Exportar Excel (.xlsx)</button>
+      </div>
+    </div>
+    <div id="indicadorContent"></div>
+  </section>
+
+  <div class="savedmsg" id="savedMsg">&nbsp;</div>
+</main>
+
+<div class="floatbar no-print">
+  <button class="btn-amber btn-sm" id="saveNowBtn">💾 Salvar</button>
+</div>
+<input type="file" id="importFile" accept="application/json" style="display:none">
+
+<script>
+(function(){
+  "use strict";
+
+  var TREINAMENTOS = [
+    {id:"basica",   label:"Brigada Básica",                      horas:32},
+    {id:"altura",   label:"Resgate em Altura",                   horas:16},
+    {id:"confinado",label:"Resgate em Espaço Confinado",         horas:32},
+    {id:"quimicos", label:"Resgate com Produtos Químicos",       horas:32},
+    {id:"sci",      label:"Sistema de Comando de Incidentes",    horas:16}
+  ];
+
+  var EQUIPES_TIPOS = [
+    {id:"altura",    label:"Resgate em Altura",              short:"Altura",    treinoId:"altura"},
+    {id:"confinado", label:"Resgate em Espaço Confinado",    short:"Confinado", treinoId:"confinado"},
+    {id:"quimicos",  label:"Resgate com Produtos Químicos",  short:"Químicos",  treinoId:"quimicos"},
+    {id:"sci",       label:"Sistema de Comando de Incidentes", short:"SCI",     treinoId:"sci"}
+  ];
+  function getEquipe(b){
+    if(!b.equipeResgate) b.equipeResgate = {};
+    EQUIPES_TIPOS.forEach(function(e){ if(typeof b.equipeResgate[e.id] !== "boolean") b.equipeResgate[e.id] = false; });
+    return b.equipeResgate;
+  }
+
+  var CHEFE_PALETTE = [
+    {bg:"#F59E0B", border:"#B45309", text:"#14171B", soft:"#FFF4E0"},
+    {bg:"#3B82F6", border:"#1D4ED8", text:"#FFFFFF", soft:"#EAF1FE"},
+    {bg:"#10B981", border:"#047857", text:"#FFFFFF", soft:"#E7FBF3"},
+    {bg:"#8B5CF6", border:"#6D28D9", text:"#FFFFFF", soft:"#F1EBFE"},
+    {bg:"#EC4899", border:"#BE185D", text:"#FFFFFF", soft:"#FDEAF3"},
+    {bg:"#14B8A6", border:"#0F766E", text:"#FFFFFF", soft:"#E5FAF7"},
+    {bg:"#F97316", border:"#C2410C", text:"#FFFFFF", soft:"#FFEEE2"},
+    {bg:"#6366F1", border:"#4338CA", text:"#FFFFFF", soft:"#ECEBFE"}
+  ];
+  function chefeColor(grupoId){
+    var idx = state.grupos.findIndex(function(g){ return g.id === grupoId; });
+    if(idx < 0) idx = 0;
+    return CHEFE_PALETTE[idx % CHEFE_PALETTE.length];
+  }
+
+  var state = {
+    coord: {enabled:false, nome:""},
+    grupos: [],
+    setores: [],
+    validadeMeses: 12,
+    chamadas: []
+  };
+  var grupoOpenState = {};
+  var grupoSearchState = {};
+  var grupoTurnoFilter = {};
+
+  function uid(){ return Math.random().toString(36).slice(2,10); }
+  function esc(s){
+    return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function novoTreinamentos(){
+    var t = {};
+    TREINAMENTOS.forEach(function(tr){ t[tr.id] = {feito:false, data:""}; });
+    return t;
+  }
+  function novoEquipeResgate(){
+    var e = {};
+    EQUIPES_TIPOS.forEach(function(tp){ e[tp.id] = false; });
+    return e;
+  }
+
+  function save(){
+    try{
+      localStorage.setItem("safeseg_brigada_v3", JSON.stringify(state));
+      var m = document.getElementById("savedMsg");
+      m.textContent = "Salvo neste dispositivo às " + new Date().toLocaleTimeString("pt-BR");
+      clearTimeout(save._t);
+      save._t = setTimeout(function(){ m.textContent = "\u00A0"; }, 2500);
+    }catch(e){ console.error("Falha ao salvar localmente:", e); }
+    scheduleCloudPush();
+  }
+  function load(){
+    try{
+      var raw = localStorage.getItem("safeseg_brigada_v3");
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(parsed && typeof parsed === "object"){ state = parsed; if(!state.validadeMeses) state.validadeMeses = 12; if(!state.chamadas) state.chamadas = []; }
+      }
+    }catch(e){ console.error("Falha ao carregar dados salvos:", e); }
+  }
+
+  // ---------- SINCRONIZAÇÃO EM NUVEM (Google Apps Script) ----------
+  var DEFAULT_CLOUD_URL = "https://script.google.com/macros/s/AKfycbz5YIgQ06H0rSoAyF8phJ4Ws4fQevsirDCQTmFR7De_pfAxJK5fsuvyRWyAJug-qosTkQ/exec";
+  var CLOUD_KEY = "safeseg_brigada_cloud_url";
+  function getCloudUrl(){
+    try{
+      var raw = localStorage.getItem(CLOUD_KEY);
+      return raw === null ? DEFAULT_CLOUD_URL : raw;
+    }catch(e){ return DEFAULT_CLOUD_URL; }
+  }
+  function setCloudUrl(u){ try{ localStorage.setItem(CLOUD_KEY, u||""); }catch(e){} }
+  function setCloudStatus(txt){ var el = document.getElementById("cloudStatus"); if(el) el.textContent = txt; }
+
+  var cloudPushTimer = null;
+  function scheduleCloudPush(){
+    var url = getCloudUrl();
+    if(!url) return;
+    clearTimeout(cloudPushTimer);
+    cloudPushTimer = setTimeout(function(){ cloudPush(false); }, 1500);
+  }
+  function cloudPush(manual){
+    var url = getCloudUrl();
+    if(!url) return;
+    if(manual) setCloudStatus("Enviando para a nuvem...");
+    fetch(url, {method:"POST", body: JSON.stringify(state)})
+      .then(function(r){ return r.json(); })
+      .then(function(){ setCloudStatus("Enviado para a nuvem às " + new Date().toLocaleTimeString("pt-BR")); })
+      .catch(function(err){ setCloudStatus("Não consegui enviar para a nuvem (verifique a URL e a conexão)."); console.error(err); });
+  }
+  function cloudPull(manual){
+    var url = getCloudUrl();
+    if(!url) return;
+    if(manual) setCloudStatus("Carregando da nuvem...");
+    fetch(url)
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(data && typeof data === "object" && (data.setores || data.grupos)){
+          state = data;
+          if(!state.validadeMeses) state.validadeMeses = 12;
+          if(!state.chamadas) state.chamadas = [];
+          localStorage.setItem("safeseg_brigada_v3", JSON.stringify(state));
+          renderAll();
+          setCloudStatus("Carregado da nuvem às " + new Date().toLocaleTimeString("pt-BR"));
+        } else if(manual){
+          setCloudStatus("A nuvem ainda não tem dados salvos — envie primeiro.");
+        }
+      })
+      .catch(function(err){ setCloudStatus("Não consegui carregar da nuvem (verifique a URL e a conexão)."); console.error(err); });
+  }
+
+  function parseDateFlexible(str){
+    str = (str||"").toString().trim();
+    if(!str) return null;
+    var m = str.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+    if(m){
+      var dd=+m[1], mo=+m[2], yy=+m[3]; if(yy<100) yy+=2000;
+      var dt = new Date(yy, mo-1, dd);
+      if(!isNaN(dt.getTime())) return dt;
+    }
+    var m2 = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if(m2){
+      var dt2 = new Date(+m2[1], +m2[2]-1, +m2[3]);
+      if(!isNaN(dt2.getTime())) return dt2;
+    }
+    return null;
+  }
+  function dateToBR(d){
+    if(!d) return "";
+    var dd = String(d.getDate()).padStart(2,"0");
+    var mm = String(d.getMonth()+1).padStart(2,"0");
+    return dd+"/"+mm+"/"+d.getFullYear();
+  }
+  function dateToISO(d){
+    if(!d) return "";
+    var mm = String(d.getMonth()+1).padStart(2,"0");
+    var dd = String(d.getDate()).padStart(2,"0");
+    return d.getFullYear()+"-"+mm+"-"+dd;
+  }
+
+  function statusTreino(t){
+    if(!t || !t.feito) return {label:"Não realizado", tone:"none"};
+    var d = parseDateFlexible(t.data);
+    if(!d) return {label:"Concluído", tone:"ok"};
+    var venc = new Date(d.getTime());
+    venc.setMonth(venc.getMonth() + (state.validadeMeses||12));
+    var hoje = new Date();
+    var dias = Math.floor((venc-hoje)/86400000);
+    if(dias < 0) return {label:"Vencido em "+dateToBR(venc), tone:"bad"};
+    if(dias <= 60) return {label:"Vence em "+dateToBR(venc), tone:"warn"};
+    return {label:"Válido até "+dateToBR(venc), tone:"ok"};
+  }
+
+  // ---------- TABS ----------
+  document.querySelectorAll(".tab-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      document.querySelectorAll(".tab-btn").forEach(function(b){ b.classList.remove("active"); });
+      document.querySelectorAll("section.panel").forEach(function(p){ p.classList.remove("active"); });
+      btn.classList.add("active");
+      document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+      if(btn.dataset.tab === "organograma") renderOrg();
+      if(btn.dataset.tab === "complementar") renderComp();
+      if(btn.dataset.tab === "controle") renderControle();
+      if(btn.dataset.tab === "painel") renderDashboard();
+      if(btn.dataset.tab === "equipes") renderEquipes();
+      if(btn.dataset.tab === "basica") renderBasica();
+      if(btn.dataset.tab === "indicador") renderIndicador();
+    });
+  });
+
+  // ---------- COORDENADOR / VALIDADE ----------
+  var coordEnabled = document.getElementById("coordEnabled");
+  var coordNome = document.getElementById("coordNome");
+  var coordNameWrap = document.getElementById("coordNameWrap");
+  coordEnabled.addEventListener("change", function(){
+    state.coord.enabled = coordEnabled.checked;
+    coordNameWrap.style.display = coordEnabled.checked ? "block" : "none";
+    save(); renderOrg();
+  });
+  coordNome.addEventListener("input", function(){ state.coord.nome = coordNome.value; save(); renderOrg(); });
+
+  var validadeInput = document.getElementById("validadeMesesInput");
+  validadeInput.addEventListener("input", function(){
+    var v = parseInt(validadeInput.value, 10);
+    if(!v || v<1) v = 12;
+    state.validadeMeses = v;
+    save(); renderSetores(); renderControle(); renderComp(); renderDashboard();
+  });
+
+  // ---------- GRUPOS (CHEFES) ----------
+  function renderGrupos(){
+    var wrap = document.getElementById("gruposList");
+    wrap.innerHTML = "";
+    if(state.grupos.length === 0){
+      wrap.innerHTML = '<p class="hint" style="margin:0">Nenhum chefe cadastrado ainda.</p>';
+    }
+    state.grupos.forEach(function(g){
+      var col = chefeColor(g.id);
+      var block = document.createElement("div");
+      block.style.borderLeft = "4px solid "+col.border;
+      block.style.paddingLeft = "12px";
+      block.style.borderBottom = "1px dashed var(--line)";
+      block.style.paddingBottom = "10px";
+      block.style.marginBottom = "10px";
+
+      var row = document.createElement("div");
+      row.className = "row";
+      row.style.alignItems = "center";
+      row.style.marginBottom = "4px";
+      row.innerHTML =
+        '<div><label>Área e turno</label><input type="text" data-field="nome" value="'+esc(g.nome)+'"></div>' +
+        '<div><label>Nome de quem é o chefe</label><input type="text" data-field="chefe" value="'+esc(g.chefe)+'"></div>' +
+        '<div style="flex:0 0 auto;align-self:flex-end"><button class="btn-danger btn-sm" data-del="1">Remover</button></div>';
+      row.querySelector('[data-field="nome"]').addEventListener("input", function(e){ g.nome = e.target.value; save(); refreshSetorGrupoOptions(); renderOrg(); });
+      row.querySelector('[data-field="chefe"]').addEventListener("input", function(e){ g.chefe = e.target.value; save(); renderOrg(); });
+      row.querySelector('[data-del]').addEventListener("click", function(){
+        if(!confirm('Remover "'+g.nome+'" e desvincular os setores dele?')) return;
+        state.grupos = state.grupos.filter(function(x){ return x.id !== g.id; });
+        state.setores.forEach(function(s){ if(s.grupoId===g.id) s.grupoId=null; });
+        save(); renderGrupos(); refreshSetorGrupoOptions(); renderSetores(); renderOrg();
+      });
+      block.appendChild(row);
+
+      if(state.setores.length){
+        var det = document.createElement("details");
+        det.open = !!grupoOpenState[g.id];
+        var setoresAqui = state.setores.filter(function(s){ return s.grupoId === g.id; }).length;
+        var summary = document.createElement("summary");
+        summary.style.cursor = "pointer"; summary.style.color = "var(--ink-dim)"; summary.style.fontSize = "12.5px";
+        summary.textContent = "Setores abaixo deste chefe (" + setoresAqui + ") — clique para selecionar";
+        det.addEventListener("toggle", function(){ grupoOpenState[g.id] = det.open; });
+        det.appendChild(summary);
+
+        var filterRow = document.createElement("div");
+        filterRow.className = "row"; filterRow.style.marginTop = "8px";
+        var searchInput = document.createElement("input");
+        searchInput.type = "text"; searchInput.placeholder = "Filtrar por setor...";
+        searchInput.value = grupoSearchState[g.id] || "";
+        filterRow.appendChild(searchInput);
+
+        var tableWrap = document.createElement("div");
+        tableWrap.className = "setor-check-list";
+
+        function paintList(){
+          var term = (grupoSearchState[g.id]||"").toLowerCase();
+          tableWrap.innerHTML = "";
+          var table = document.createElement("table");
+          table.innerHTML = "<thead><tr><th></th><th>Setor</th><th>Brigadistas</th></tr></thead>";
+          var tbody = document.createElement("tbody");
+          state.setores
+            .filter(function(s){ return !term || s.nome.toLowerCase().indexOf(term)>-1; })
+            .forEach(function(s){
+              var belongsHere = s.grupoId === g.id;
+              var belongsElsewhere = s.grupoId && !belongsHere;
+              var tr = document.createElement("tr");
+              if(belongsElsewhere) tr.style.opacity = "0.55";
+              tr.innerHTML =
+                '<td><input type="checkbox" '+(belongsHere?"checked":"")+'></td>' +
+                '<td>'+esc(s.nome)+(belongsElsewhere?' <span class="hint" style="margin:0">(outro chefe)</span>':'')+'</td>' +
+                '<td>'+s.brigadistas.length+'</td>';
+              tr.querySelector("input").addEventListener("change", function(e){
+                s.grupoId = e.target.checked ? g.id : null;
+                save();
+                summary.textContent = "Setores abaixo deste chefe (" + state.setores.filter(function(x){return x.grupoId===g.id;}).length + ") — clique para selecionar";
+                paintList(); renderSetores(); renderOrg();
+              });
+              tbody.appendChild(tr);
+            });
+          table.appendChild(tbody);
+          tableWrap.appendChild(table);
+        }
+        paintList();
+        searchInput.addEventListener("input", function(e){ grupoSearchState[g.id] = e.target.value; paintList(); });
+
+        det.appendChild(filterRow);
+        det.appendChild(tableWrap);
+        block.appendChild(det);
+      }
+      wrap.appendChild(block);
+    });
+  }
+
+  document.getElementById("addGrupoBtn").addEventListener("click", function(){
+    var nomeInput = document.getElementById("grupoNomeInput");
+    var chefeInput = document.getElementById("grupoChefeInput");
+    var nome = nomeInput.value.trim();
+    if(!nome){ nomeInput.focus(); return; }
+    state.grupos.push({id:uid(), nome:nome, chefe:chefeInput.value.trim()});
+    nomeInput.value = ""; chefeInput.value = "";
+    save(); renderGrupos(); refreshSetorGrupoOptions(); renderOrg();
+  });
+
+  function refreshSetorGrupoOptions(){
+    var wrap = document.getElementById("setorGrupoWrap");
+    var sel = document.getElementById("setorGrupoInput");
+    wrap.style.display = state.grupos.length ? "block" : "none";
+    sel.innerHTML = '<option value="">— sem chefe —</option>' +
+      state.grupos.map(function(g){ return '<option value="'+g.id+'">'+esc(g.nome)+'</option>'; }).join("");
+  }
+
+  function grupoLabel(grupoId){
+    var g = state.grupos.find(function(x){ return x.id === grupoId; });
+    return g ? g.nome : null;
+  }
+
+  // ---------- SETORES ----------
+  function addSetor(nome, grupoId){
+    nome = (nome||"").trim();
+    if(!nome) return;
+    state.setores.push({id:uid(), nome:nome, grupoId:grupoId||null, brigadistas:[]});
+  }
+
+  document.getElementById("addSetorBtn").addEventListener("click", function(){
+    var input = document.getElementById("setorNomeInput");
+    var grupoSel = document.getElementById("setorGrupoInput");
+    if(!input.value.trim()){ input.focus(); return; }
+    addSetor(input.value, grupoSel.value || null);
+    input.value = "";
+    save(); renderSetores(); renderOrg();
+  });
+  document.getElementById("bulkAddBtn").addEventListener("click", function(){
+    var ta = document.getElementById("bulkSetores");
+    var lines = ta.value.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
+    var grupoSel = document.getElementById("setorGrupoInput");
+    lines.forEach(function(l){ addSetor(l, grupoSel.value || null); });
+    ta.value = "";
+    save(); renderSetores(); renderOrg();
+  });
+
+  var setoresSearch = "";
+  function renderSetores(){
+    var wrap = document.getElementById("setoresList");
+    wrap.innerHTML = "";
+    if(state.setores.length === 0){
+      wrap.innerHTML = '<div class="empty">Nenhum setor cadastrado ainda. Importe a planilha na aba Estrutura, ou adicione setores manualmente acima.</div>';
+      return;
+    }
+    var term = setoresSearch.trim().toLowerCase();
+    var listaSetores = state.setores.filter(function(s){
+      if(!term) return true;
+      if(s.nome.toLowerCase().indexOf(term)>-1) return true;
+      return s.brigadistas.some(function(b){ return (b.nome||"").toLowerCase().indexOf(term)>-1; });
+    });
+    if(listaSetores.length === 0){
+      wrap.innerHTML = '<div class="empty">Nenhum resultado para essa busca.</div>';
+      return;
+    }
+    listaSetores.forEach(function(s){
+      var card = document.createElement("div");
+      card.className = "setor-card";
+      if(s.grupoId){ card.style.borderLeft = "4px solid "+chefeColor(s.grupoId).border; }
+
+      var head = document.createElement("div");
+      head.className = "setor-head";
+      var glabel = grupoLabel(s.grupoId);
+      head.innerHTML =
+        '<div style="flex:1">' +
+          (glabel ? '<span class="tag">'+esc(glabel)+'</span><br>' : '') +
+          '<input type="text" class="setor-name-input" value="'+esc(s.nome)+'" style="width:100%">' +
+        '</div>' +
+        '<button class="btn-danger btn-sm" data-del-setor>Remover setor</button>';
+      head.querySelector(".setor-name-input").addEventListener("input", function(e){ s.nome = e.target.value; save(); renderOrg(); });
+      head.querySelector("[data-del-setor]").addEventListener("click", function(){
+        if(confirm('Remover o setor "'+s.nome+'" e todos os brigadistas dele?')){
+          state.setores = state.setores.filter(function(x){ return x.id !== s.id; });
+          save(); renderSetores(); renderOrg();
+        }
+      });
+      card.appendChild(head);
+
+      if(state.grupos.length){
+        var gselWrap = document.createElement("div");
+        gselWrap.style.marginBottom = "10px";
+        gselWrap.innerHTML = '<label>Chefe deste setor</label>';
+        var gsel = document.createElement("select");
+        gsel.innerHTML = '<option value="">— sem chefe definido —</option>' +
+          state.grupos.map(function(g){ return '<option value="'+g.id+'"'+(g.id===s.grupoId?" selected":"")+'>'+esc(g.nome)+'</option>'; }).join("");
+        gsel.addEventListener("change", function(){ s.grupoId = gsel.value || null; save(); renderSetores(); renderOrg(); });
+        gselWrap.appendChild(gsel);
+        card.appendChild(gselWrap);
+      }
+
+      var brigList = document.createElement("div");
+      brigList.className = "brig-list";
+      brigList.innerHTML = '<h3>Brigadistas do setor ('+s.brigadistas.length+')</h3>';
+      if(s.brigadistas.length === 0){
+        brigList.innerHTML += '<p class="hint" style="margin:0">Nenhum brigadista ainda.</p>';
+      }
+      s.brigadistas.forEach(function(b){ brigList.appendChild(renderBrigadistaItem(s, b)); });
+
+      var pickerRow = document.createElement("div");
+      pickerRow.className = "picker-row";
+      var pickerInput = document.createElement("input");
+      pickerInput.type = "text"; pickerInput.placeholder = "Nome do novo brigadista...";
+      var pickerBtn = document.createElement("button");
+      pickerBtn.className = "btn-amber btn-sm"; pickerBtn.textContent = "+ Adicionar brigadista";
+      pickerBtn.addEventListener("click", function(){
+        var nome = pickerInput.value.trim();
+        if(!nome) return;
+        s.brigadistas.push({
+          id:uid(), matricula:"", nome:nome, funcao:"", turno:"", equipe:"",
+          supervisor:"", emailSupervisor:"", status:"Ativo", industriaAgro:"",
+          tipo:"organico", exclusiva:false, isLiderSetor:false, chefeOverrideId:null,
+          treinamentos: novoTreinamentos(), equipeResgate: novoEquipeResgate(), observacoes:""
+        });
+        pickerInput.value = "";
+        save(); renderSetores(); renderOrg();
+      });
+      pickerInput.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); pickerBtn.click(); } });
+      pickerRow.appendChild(pickerInput); pickerRow.appendChild(pickerBtn);
+      brigList.appendChild(pickerRow);
+      card.appendChild(brigList);
+
+      wrap.appendChild(card);
+    });
+  }
+
+  function renderBrigadistaItem(setor, b){
+    var item = document.createElement("div");
+    item.className = "brig-item";
+
+    var row1 = document.createElement("div");
+    row1.className = "row";
+    row1.innerHTML =
+      '<div><label>Nome</label><input type="text" data-f="nome" value="'+esc(b.nome)+'" placeholder="Nome completo"></div>' +
+      '<div><label>Função</label><input type="text" data-f="funcao" value="'+esc(b.funcao||"")+'" placeholder="Cargo/função"></div>' +
+      '<div><label>Matrícula</label><input type="text" data-f="matricula" value="'+esc(b.matricula||"")+'"></div>';
+    item.appendChild(row1);
+
+    var row2 = document.createElement("div");
+    row2.className = "row";
+    row2.innerHTML =
+      '<div><label>Turno</label><input type="text" data-f="turno" value="'+esc(b.turno||"")+'" placeholder="Ex.: 1º Turno"></div>' +
+      '<div><label>Equipe</label><input type="text" data-f="equipe" value="'+esc(b.equipe||"")+'"></div>' +
+      '<div><label>Status</label><select data-f="status">' +
+        '<option value="Ativo"'+(b.status!=="Afastamento"?" selected":"")+'>Ativo</option>' +
+        '<option value="Afastamento"'+(b.status==="Afastamento"?" selected":"")+'>Afastamento</option>' +
+      '</select></div>';
+    item.appendChild(row2);
+
+    var row3 = document.createElement("div");
+    row3.className = "row";
+    row3.innerHTML =
+      '<div><label>Supervisor</label><input type="text" data-f="supervisor" value="'+esc(b.supervisor||"")+'"></div>' +
+      '<div><label>E-mail do supervisor</label><input type="email" data-f="emailSupervisor" value="'+esc(b.emailSupervisor||"")+'"></div>' +
+      '<div><label>Indústria ou Agro</label><select data-f="industriaAgro">' +
+        '<option value=""'+(!b.industriaAgro?" selected":"")+'>—</option>' +
+        '<option value="IND"'+(b.industriaAgro==="IND"?" selected":"")+'>Indústria</option>' +
+        '<option value="AGRO"'+(b.industriaAgro==="AGRO"?" selected":"")+'>Agro</option>' +
+      '</select></div>';
+    item.appendChild(row3);
+
+    var row3b = document.createElement("div");
+    row3b.innerHTML = '<label>Observações</label><input type="text" data-f="observacoes" value="'+esc(b.observacoes||"")+'" placeholder="Ex.: disponibilidade, restrição médica, preferência de horário...">';
+    item.appendChild(row3b);
+
+    var row4 = document.createElement("div");
+    row4.className = "row";
+    row4.innerHTML = '<div><label>Tipo</label><select data-f="tipo">' +
+        '<option value="organico"'+(b.tipo!=="profissional"?" selected":"")+'>Brigadista orgânico</option>' +
+        '<option value="profissional"'+(b.tipo==="profissional"?" selected":"")+'>Brigadista profissional</option>' +
+      '</select></div>';
+    item.appendChild(row4);
+
+    if(b.tipo === "profissional"){
+      var exRow = document.createElement("div");
+      exRow.className = "checkrow";
+      exRow.innerHTML = '<input type="checkbox" '+(b.exclusiva?"checked":"")+' data-f="exclusiva"><label>Dedicação exclusiva à brigada</label>';
+      exRow.querySelector("input").addEventListener("change", function(e){ b.exclusiva = e.target.checked; save(); });
+      item.appendChild(exRow);
+    }
+
+    var liderRow = document.createElement("div");
+    liderRow.className = "checkrow";
+    liderRow.innerHTML = '<input type="checkbox" '+(b.isLiderSetor?"checked":"")+' data-f="lider"><label>É líder deste setor na brigada (até 2 por setor)</label>';
+    liderRow.querySelector("input").addEventListener("change", function(e){
+      b.isLiderSetor = e.target.checked;
+      var totalLideres = setor.brigadistas.filter(function(x){ return x.isLiderSetor; }).length;
+      save(); renderSetores(); renderOrg();
+      if(totalLideres > 2){ alert('Atenção: "'+setor.nome+'" já tem '+totalLideres+' líderes marcados — o recomendado é no máximo 2.'); }
+    });
+    item.appendChild(liderRow);
+
+    var chefeDet = document.createElement("details");
+    chefeDet.style.margin = "8px 0";
+    var chefeAtual = state.grupos.find(function(g){ return g.id === b.chefeOverrideId; });
+    var chefeSummary = document.createElement("summary");
+    chefeSummary.style.cursor = "pointer"; chefeSummary.style.fontSize = "12.5px";
+    chefeSummary.style.color = chefeAtual ? "var(--amber)" : "var(--ink-dim)";
+    chefeSummary.textContent = chefeAtual ? ("▸ Responde a outro chefe: " + chefeAtual.nome) : "▸ Este brigadista responde a outro chefe";
+    chefeDet.appendChild(chefeSummary);
+    var chefeSel = document.createElement("select");
+    chefeSel.style.marginTop = "6px";
+    chefeSel.innerHTML = '<option value="">— usar o chefe do setor —</option>' +
+      state.grupos.map(function(g){ return '<option value="'+g.id+'"'+(g.id===b.chefeOverrideId?" selected":"")+'>'+esc(g.nome)+'</option>'; }).join("");
+    chefeSel.addEventListener("change", function(e){ b.chefeOverrideId = e.target.value || null; save(); renderSetores(); renderOrg(); });
+    chefeDet.appendChild(chefeSel);
+    item.appendChild(chefeDet);
+
+    var treinoLabel = document.createElement("label");
+    treinoLabel.textContent = "Treinamentos";
+    item.appendChild(treinoLabel);
+    TREINAMENTOS.forEach(function(tr){
+      var t = b.treinamentos[tr.id] || (b.treinamentos[tr.id] = {feito:false, data:""});
+      var trow = document.createElement("div");
+      trow.className = "treino-row";
+      var st = statusTreino(t);
+      trow.innerHTML =
+        '<input type="checkbox" '+(t.feito?"checked":"")+' data-tf="feito">' +
+        '<span class="tname">'+esc(tr.label)+' <span class="thoras">('+tr.horas+'h)</span></span>' +
+        '<input type="date" data-tf="data" value="'+esc(dateToISOFromBR(t.data))+'">' +
+        '<span class="tstatus tstatus-'+st.tone+'">'+esc(st.label)+'</span>';
+      trow.querySelector('[data-tf="feito"]').addEventListener("change", function(e){
+        t.feito = e.target.checked; save(); renderSetores(); renderControle(); renderComp(); renderDashboard();
+      });
+      trow.querySelector('[data-tf="data"]').addEventListener("change", function(e){
+        var iso = e.target.value;
+        t.data = iso ? dateToBR(new Date(iso+"T00:00:00")) : "";
+        if(iso) t.feito = true;
+        save(); renderSetores(); renderControle(); renderComp(); renderDashboard();
+      });
+      item.appendChild(trow);
+    });
+
+    var delBtn = document.createElement("button");
+    delBtn.className = "btn-danger btn-sm"; delBtn.style.marginTop = "6px";
+    delBtn.textContent = "Remover brigadista";
+    delBtn.addEventListener("click", function(){
+      setor.brigadistas = setor.brigadistas.filter(function(x){ return x.id !== b.id; });
+      save(); renderSetores(); renderOrg();
+    });
+    item.appendChild(delBtn);
+
+    item.querySelector('[data-f="nome"]').addEventListener("input", function(e){ b.nome = e.target.value; save(); renderOrg(); });
+    item.querySelector('[data-f="funcao"]').addEventListener("input", function(e){ b.funcao = e.target.value; save(); });
+    item.querySelector('[data-f="matricula"]').addEventListener("input", function(e){ b.matricula = e.target.value; save(); });
+    item.querySelector('[data-f="turno"]').addEventListener("input", function(e){ b.turno = e.target.value; save(); });
+    item.querySelector('[data-f="equipe"]').addEventListener("input", function(e){ b.equipe = e.target.value; save(); });
+    item.querySelector('[data-f="status"]').addEventListener("change", function(e){ b.status = e.target.value; save(); renderControle(); });
+    item.querySelector('[data-f="supervisor"]').addEventListener("input", function(e){ b.supervisor = e.target.value; save(); });
+    item.querySelector('[data-f="emailSupervisor"]').addEventListener("input", function(e){ b.emailSupervisor = e.target.value; save(); });
+    item.querySelector('[data-f="industriaAgro"]').addEventListener("change", function(e){ b.industriaAgro = e.target.value; save(); renderDashboard(); });
+    item.querySelector('[data-f="observacoes"]').addEventListener("input", function(e){ b.observacoes = e.target.value; save(); });
+    item.querySelector('[data-f="tipo"]').addEventListener("change", function(e){ b.tipo = e.target.value; save(); renderSetores(); });
+
+    return item;
+  }
+
+  function dateToISOFromBR(br){
+    var d = parseDateFlexible(br);
+    return d ? dateToISO(d) : "";
+  }
+
+  // ---------- CONTROLE (tabela plana) ----------
+  var ctlFilterCourse = null;
+  var ctlSearch = "";
+
+  function allBrigadistasFlat(){
+    var list = [];
+    state.setores.forEach(function(s){ s.brigadistas.forEach(function(b){ list.push({b:b, setor:s}); }); });
+    return list;
+  }
+
+  function renderCtlFilters(){
+    var wrap = document.getElementById("ctlFilters");
+    wrap.innerHTML = "";
+    var allChip = document.createElement("label");
+    allChip.className = "filter-chip" + (ctlFilterCourse===null?" active":"");
+    allChip.textContent = "Todos";
+    allChip.addEventListener("click", function(){ ctlFilterCourse = null; renderControle(); });
+    wrap.appendChild(allChip);
+    TREINAMENTOS.forEach(function(tr){
+      var chip = document.createElement("label");
+      chip.className = "filter-chip" + (ctlFilterCourse===tr.id?" active":"");
+      chip.textContent = tr.label;
+      chip.addEventListener("click", function(){ ctlFilterCourse = (ctlFilterCourse===tr.id?null:tr.id); renderControle(); });
+      wrap.appendChild(chip);
+    });
+  }
+
+  function renderControle(){
+    renderCtlFilters();
+    var table = document.getElementById("ctlTable");
+    var all = allBrigadistasFlat();
+
+    if(all.length === 0){
+      table.innerHTML = '<tbody><tr><td style="text-align:center;padding:24px;color:var(--ink-dim);border:none">Importe a planilha na aba Estrutura, ou cadastre brigadistas na aba Setores, para usar o controle.</td></tr></tbody>';
+      return;
+    }
+
+    var term = ctlSearch.trim().toLowerCase();
+    var filtered = all.filter(function(x){
+      if(ctlFilterCourse && !x.b.treinamentos[ctlFilterCourse].feito) return false;
+      if(term && x.b.nome.toLowerCase().indexOf(term) === -1) return false;
+      return true;
+    });
+
+    var html = "<thead><tr><th>Nome</th><th>Função</th><th>Turno</th><th>Setor (mover)</th><th>Status</th><th>Treinamentos</th><th></th></tr></thead><tbody>";
+    filtered.forEach(function(x){
+      var b = x.b, curSetor = x.setor;
+      var statusClass = b.status === "Afastamento" ? "status-afastamento" : "status-ativo";
+      html +=
+        '<tr data-bid="'+b.id+'" data-setorid="'+curSetor.id+'">' +
+        '<td><input type="text" data-f="nome" value="'+esc(b.nome)+'"></td>' +
+        '<td><input type="text" data-f="funcao" value="'+esc(b.funcao||"")+'"></td>' +
+        '<td><input type="text" data-f="turno" value="'+esc(b.turno||"")+'" style="max-width:90px"></td>' +
+        '<td><select data-f="mover">' + state.setores.map(function(s){
+            var glabel = grupoLabel(s.grupoId) || "sem chefe";
+            return '<option value="'+s.id+'"'+(s.id===curSetor.id?" selected":"")+'>'+esc(s.nome)+' — '+esc(glabel)+'</option>';
+          }).join("") + '</select></td>' +
+        '<td><span class="status-tag '+statusClass+'">'+esc(b.status||"Ativo")+'</span></td>' +
+        '<td><div class="comp-cell">' + TREINAMENTOS.map(function(tr){
+            return '<button type="button" data-comp="'+tr.id+'" class="'+(b.treinamentos[tr.id].feito?"on":"")+'" title="'+esc(tr.label)+'">'+tr.label.split(" ")[0].slice(0,4).toUpperCase()+'</button>';
+          }).join("") + '</div></td>' +
+        '<td><button type="button" class="btn-danger btn-sm" data-del="1">Remover</button></td>' +
+        '</tr>';
+    });
+    html += "</tbody>";
+    table.innerHTML = html;
+
+    table.querySelectorAll("tbody tr").forEach(function(tr){
+      var bid = tr.dataset.bid, setorId = tr.dataset.setorid;
+      var setorObj = state.setores.find(function(s){ return s.id === setorId; });
+      var brigObj = setorObj.brigadistas.find(function(x){ return x.id === bid; });
+
+      tr.querySelector('[data-f="nome"]').addEventListener("input", function(e){ brigObj.nome = e.target.value; save(); });
+      tr.querySelector('[data-f="funcao"]').addEventListener("input", function(e){ brigObj.funcao = e.target.value; save(); });
+      tr.querySelector('[data-f="turno"]').addEventListener("input", function(e){ brigObj.turno = e.target.value; save(); });
+      tr.querySelector('[data-f="mover"]').addEventListener("change", function(e){
+        var destId = e.target.value;
+        if(destId === setorId) return;
+        var dest = state.setores.find(function(s){ return s.id === destId; });
+        setorObj.brigadistas = setorObj.brigadistas.filter(function(x){ return x.id !== bid; });
+        dest.brigadistas.push(brigObj);
+        save(); renderControle(); renderSetores(); renderOrg();
+      });
+      tr.querySelectorAll('[data-comp]').forEach(function(btn){
+        btn.addEventListener("click", function(){
+          var key = btn.dataset.comp;
+          brigObj.treinamentos[key].feito = !brigObj.treinamentos[key].feito;
+          save(); renderControle(); renderComp(); renderDashboard();
+        });
+      });
+      tr.querySelector('[data-del]').addEventListener("click", function(){
+        if(!confirm('Remover "'+brigObj.nome+'" da brigada?')) return;
+        setorObj.brigadistas = setorObj.brigadistas.filter(function(x){ return x.id !== bid; });
+        save(); renderControle(); renderSetores(); renderOrg();
+      });
+    });
+  }
+  document.getElementById("ctlSearch").addEventListener("input", function(e){ ctlSearch = e.target.value; renderControle(); });
+
+  // ---------- ORGANOGRAMA ----------
+  var GAP_X = 20, V_GAP = 34, ROW_GAP = 20, STUB = 14;
+  var SETOR_BASE_H = 44, SUB_LINE_H = 14, NAME_LINE_H = 13, BADGE_LINE_H = 16;
+
+  function truncateLabel(s, n){ s = s||""; return s.length>n ? (s.slice(0,n-1)+"…") : s; }
+
+  function makeSetorNode(s, expandNames, allBrig){
+    var brigsAqui = allBrig ? s.brigadistas.slice() : s.brigadistas.filter(function(b){ return !b.chefeOverrideId || b.chefeOverrideId === s.grupoId; });
+    var liders = s.brigadistas.filter(function(b){ return b.isLiderSetor; }).map(function(b){ return b.nome||"(sem nome)"; });
+    var subParts = [];
+    if(liders.length) subParts.push("Líder: "+liders.join(", "));
+    var namesList = expandNames ? brigsAqui.map(function(b){
+      var tag = b.tipo==="profissional" ? "P" : "O";
+      var cursos = TREINAMENTOS.filter(function(tr){ return b.treinamentos[tr.id].feito; }).length;
+      return (b.isLiderSetor?"★ ":"") + (b.nome||"(sem nome)") + " ["+tag+(cursos?"+"+cursos:"")+"]";
+    }) : [];
+    var h = SETOR_BASE_H + (subParts.length?SUB_LINE_H:0) + (namesList.length ? (namesList.length*NAME_LINE_H+6) : (expandNames?0:BADGE_LINE_H));
+    return {id:s.id, label:s.nome, sub:subParts.join(" · "), count:brigsAqui.length, namesList:namesList,
+      kind:"setor", w:210, h:h, chefeId:s.grupoId, children:[]};
+  }
+
+  function buildOrgTree(expandNames){
+    var hasCoord = state.coord.enabled && (state.coord.nome||"").trim();
+    var root = {label: hasCoord?state.coord.nome:"Coordenador (a definir)", sub:"Coordenador geral", kind:"coord", w:230, h:58, children:[]};
+    var chefeById = {};
+    var chefeNodes = state.grupos.map(function(g){
+      var node = {id:g.id, label:g.nome, sub:g.chefe?("Chefe: "+g.chefe):"(chefe a definir)", kind:"chefe", chefeId:g.id, w:210, h:58, children:[]};
+      chefeById[g.id] = node; return node;
+    });
+    state.setores.forEach(function(s){
+      if(!s.grupoId || !chefeById[s.grupoId]) return;
+      chefeById[s.grupoId].children.push(makeSetorNode(s, expandNames));
+    });
+    state.setores.forEach(function(s){
+      s.brigadistas.forEach(function(b){
+        if(b.chefeOverrideId && b.chefeOverrideId !== s.grupoId && chefeById[b.chefeOverrideId]){
+          chefeById[b.chefeOverrideId].children.push({
+            label:b.nome||"(sem nome)", sub:"Setor: "+s.nome+" (outro turno)"+(b.isLiderSetor?" · Líder":""),
+            kind:"overrideBrig", chefeId:b.chefeOverrideId, w:210, h:48, children:[]
+          });
+        }
+      });
+    });
+    root.children = chefeNodes.slice();
+    var semChefe = state.setores.filter(function(s){ return !s.grupoId || !chefeById[s.grupoId]; });
+    if(semChefe.length){
+      var pseudo = {label:"⚠ Sem chefe definido", sub:semChefe.length+" setor(es) — corrigir", kind:"warn", w:230, h:58, children:[]};
+      semChefe.forEach(function(s){ pseudo.children.push(makeSetorNode(s, expandNames)); });
+      root.children.push(pseudo);
+    }
+    return root;
+  }
+
+  function buildSetorOnlyTree(expandNames){
+    var hasCoord = state.coord.enabled && (state.coord.nome||"").trim();
+    var root = {label: hasCoord?state.coord.nome:"Setores da Brigada", sub:"Visão por setor (sem chefes)", kind:"coord", w:240, h:58, children:[]};
+    root.children = state.setores.map(function(s){ return makeSetorNode(s, expandNames, true); });
+    return root;
+  }
+
+  function buildCursosTree(){
+    var hasCoord = state.coord.enabled && (state.coord.nome||"").trim();
+    var root = {label: hasCoord?state.coord.nome:"Cursos Especialistas", sub:"Visão por curso completo", kind:"coord", w:240, h:58, children:[]};
+    var todos = [];
+    state.setores.forEach(function(s){ s.brigadistas.forEach(function(b){ todos.push({b:b, setor:s}); }); });
+    TREINAMENTOS.forEach(function(tr){
+      var comCurso = todos.filter(function(x){ return x.b.treinamentos[tr.id].feito; });
+      var cursoNode = {label:tr.label, sub:comCurso.length+" brigadista"+(comCurso.length===1?"":"s"), kind:"chefe", w:230, h:58, children:[]};
+      comCurso.forEach(function(x){
+        cursoNode.children.push({label:x.b.nome||"(sem nome)", sub:"Setor: "+x.setor.nome+(x.b.isLiderSetor?" · Líder":""), kind:"overrideBrig", w:200, h:48, children:[]});
+      });
+      root.children.push(cursoNode);
+    });
+    var semCurso = todos.filter(function(x){ return TREINAMENTOS.every(function(tr){ return !x.b.treinamentos[tr.id].feito; }); });
+    if(semCurso.length){
+      var semNode = {label:"Sem curso especialista", sub:semCurso.length+" brigadista"+(semCurso.length===1?"":"s"), kind:"warn", w:230, h:58, children:[]};
+      semCurso.forEach(function(x){ semNode.children.push({label:x.b.nome||"(sem nome)", sub:"Setor: "+x.setor.nome, kind:"brig", w:200, h:48, children:[]}); });
+      root.children.push(semNode);
+    }
+    return root;
+  }
+
+  function gridCols(n){ return Math.max(1, Math.min(n, Math.ceil(Math.sqrt(n) * 0.65))); }
+  function sizeNode(node){
+    var children = node.children || [];
+    if(!children.length){ node._gridW=node.w; node._gridH=node.h; return; }
+    children.forEach(sizeNode);
+    var cols = gridCols(children.length);
+    var rows = [];
+    for(var i=0;i<children.length;i+=cols){ rows.push(children.slice(i,i+cols)); }
+    var gridWidth=0, gridHeight=0;
+    rows.forEach(function(row,ri){
+      var rowW = row.reduce(function(a,c,idx){ return a+c._gridW+(idx<row.length-1?GAP_X:0); },0);
+      var rowH = row.reduce(function(m,c){ return Math.max(m,c._gridH); },0);
+      gridWidth = Math.max(gridWidth, rowW);
+      gridHeight += rowH + (ri<rows.length-1?ROW_GAP:0);
+    });
+    node._rows = rows;
+    node._gridW = Math.max(node.w, gridWidth);
+    node._gridH = node.h + V_GAP + gridHeight;
+  }
+  function positionNode(node, xLeft, yTop){
+    node.x = xLeft + node._gridW/2; node.y = yTop;
+    var children = node.children || [];
+    if(!children.length) return;
+    var rowY = yTop + node.h + V_GAP;
+    node._rows.forEach(function(row){
+      var rowW = row.reduce(function(a,c,idx){ return a+c._gridW+(idx<row.length-1?GAP_X:0); },0);
+      var rowH = row.reduce(function(m,c){ return Math.max(m,c._gridH); },0);
+      var cx = node.x - rowW/2;
+      row.forEach(function(c){ positionNode(c, cx, rowY); cx += c._gridW + GAP_X; });
+      rowY += rowH + ROW_GAP;
+    });
+  }
+
+  var NODE_COLORS = {
+    coord:{fill:"#14171B",stroke:"#14171B",text:"#FFFFFF",sub:"#D9D9D9"},
+    chefe:{fill:"#F59E0B",stroke:"#B45309",text:"#14171B",sub:"#5C3D0A"},
+    setor:{fill:"#FFFFFF",stroke:"#B45309",text:"#14171B",sub:"#6B7280"},
+    brig:{fill:"#F4F5F6",stroke:"#C7CBD1",text:"#14171B",sub:"#6B7280"},
+    overrideBrig:{fill:"#FFF8EC",stroke:"#B45309",text:"#14171B",sub:"#6B7280"},
+    warn:{fill:"#FDEDEC",stroke:"#E4574C",text:"#B33127",sub:"#B33127"}
+  };
+  function colorsForNode(n){
+    if((n.kind==="chefe" || n.kind==="setor" || n.kind==="overrideBrig") && n.chefeId){
+      var pc = chefeColor(n.chefeId);
+      if(n.kind==="chefe") return {fill:pc.bg, stroke:pc.border, text:pc.text, sub:pc.text, edge:pc.border};
+      if(n.kind==="setor") return {fill:"#FFFFFF", stroke:pc.border, text:"#14171B", sub:"#6B7280", edge:pc.border};
+      if(n.kind==="overrideBrig") return {fill:pc.soft, stroke:pc.border, text:"#14171B", sub:"#6B7280", edge:pc.border};
+    }
+    var c = NODE_COLORS[n.kind] || NODE_COLORS.setor;
+    return {fill:c.fill, stroke:c.stroke, text:c.text, sub:c.sub, edge: n.kind==="warn" ? "#E4574C" : "#9CA3AF"};
+  }
+
+  // ---------- PAN & ZOOM ----------
+  var orgViewCtx = null;
+  var orgDrag = {active:false, startX:0, startY:0, viewStartX:0, viewStartY:0};
+  function clampNum(v,lo,hi){ return Math.max(lo, Math.min(hi, v)); }
+  function applyOrgView(animated){
+    if(!orgViewCtx) return;
+    if(animated){
+      orgViewCtx.viewport.style.transition = "transform 220ms ease";
+      clearTimeout(orgViewCtx.animTimer);
+      orgViewCtx.animTimer = setTimeout(function(){ if(orgViewCtx) orgViewCtx.viewport.style.transition=""; }, 240);
+    }
+    orgViewCtx.viewport.setAttribute("transform","translate("+orgViewCtx.view.x+","+orgViewCtx.view.y+") scale("+orgViewCtx.view.scale+")");
+  }
+  function orgSvgPoint(evt){
+    var rect = orgViewCtx.svg.getBoundingClientRect();
+    var ratio = orgViewCtx.totalW / rect.width;
+    var cx = evt.touches ? evt.touches[0].clientX : evt.clientX;
+    var cy = evt.touches ? evt.touches[0].clientY : evt.clientY;
+    return {x:(cx-rect.left)*ratio, y:(cy-rect.top)*ratio};
+  }
+  function orgZoomBy(factor){
+    if(!orgViewCtx) return;
+    var cx = orgViewCtx.totalW/2, cy = orgViewCtx.totalH/2;
+    var ns = clampNum(orgViewCtx.view.scale*factor, 0.2, 4);
+    orgViewCtx.view.x = cx - (cx-orgViewCtx.view.x)*(ns/orgViewCtx.view.scale);
+    orgViewCtx.view.y = cy - (cy-orgViewCtx.view.y)*(ns/orgViewCtx.view.scale);
+    orgViewCtx.view.scale = ns;
+    applyOrgView(true);
+  }
+  document.addEventListener("mousemove", function(evt){
+    if(!orgDrag.active || !orgViewCtx) return;
+    var p = orgSvgPoint(evt);
+    orgViewCtx.view.x = orgDrag.viewStartX + (p.x-orgDrag.startX);
+    orgViewCtx.view.y = orgDrag.viewStartY + (p.y-orgDrag.startY);
+    applyOrgView();
+  });
+  document.addEventListener("mouseup", function(){ if(orgDrag.active){ orgDrag.active=false; if(orgViewCtx) orgViewCtx.svg.style.cursor="grab"; } });
+  document.addEventListener("touchmove", function(evt){
+    if(!orgDrag.active || !orgViewCtx) return;
+    evt.preventDefault();
+    var p = orgSvgPoint(evt);
+    orgViewCtx.view.x = orgDrag.viewStartX + (p.x-orgDrag.startX);
+    orgViewCtx.view.y = orgDrag.viewStartY + (p.y-orgDrag.startY);
+    applyOrgView();
+  }, {passive:false});
+  document.addEventListener("touchend", function(){ orgDrag.active = false; });
+  document.getElementById("zoomInBtn").addEventListener("click", function(){ orgZoomBy(1.25); });
+  document.getElementById("zoomOutBtn").addEventListener("click", function(){ orgZoomBy(1/1.25); });
+  document.getElementById("zoomResetBtn").addEventListener("click", function(){
+    if(!orgViewCtx) return; orgViewCtx.view = {x:0,y:0,scale:1}; applyOrgView(true);
+  });
+
+  var orgViewMode = "chefe";
+  document.getElementById("orgModeSelect").addEventListener("change", function(e){ orgViewMode = e.target.value; renderOrg(); });
+
+  function renderOrg(){
+    var wrap = document.getElementById("orgWrap");
+    wrap.innerHTML = "";
+    if(state.setores.length === 0){
+      wrap.innerHTML = '<div class="empty">Importe a planilha na aba Estrutura, ou cadastre setores na aba Setores, para gerar o organograma.</div>';
+      orgViewCtx = null;
+      return;
+    }
+    var expandChk = document.getElementById("orgCompactChk");
+    var expandNames = expandChk.checked;
+
+    var root;
+    if(orgViewMode==="setor") root = buildSetorOnlyTree(expandNames);
+    else if(orgViewMode==="cursos") root = buildCursosTree();
+    else root = buildOrgTree(expandNames);
+    sizeNode(root); positionNode(root, 0, 0);
+
+    var PAD = 26;
+    var totalW = root._gridW + PAD*2;
+    var maxBottom = 0;
+    (function measure(n){ var bottom=n.y+n.h; if(bottom>maxBottom) maxBottom=bottom; (n.children||[]).forEach(measure); })(root);
+    var totalH = maxBottom + PAD;
+
+    var svgNS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(svgNS,"svg");
+    svg.setAttribute("id","orgSvg");
+    svg.setAttribute("viewBox","0 0 "+totalW+" "+totalH);
+    svg.setAttribute("width",totalW); svg.setAttribute("height",totalH);
+    svg.style.display="block"; svg.style.background="#FFFFFF"; svg.style.width="100%"; svg.style.height="auto";
+
+    var bg = document.createElementNS(svgNS,"rect");
+    bg.setAttribute("x",0); bg.setAttribute("y",0); bg.setAttribute("width",totalW); bg.setAttribute("height",totalH); bg.setAttribute("fill","#FFFFFF");
+    svg.appendChild(bg);
+
+    var viewport = document.createElementNS(svgNS,"g");
+    viewport.setAttribute("id","orgViewport");
+    svg.appendChild(viewport);
+
+    function drawLine(x1,y1,x2,y2,color){
+      var p = document.createElementNS(svgNS,"path");
+      p.setAttribute("d","M"+x1+","+y1+" L "+x2+","+y2);
+      p.setAttribute("fill","none"); p.setAttribute("stroke",color||"#9CA3AF");
+      p.setAttribute("stroke-width","2"); p.setAttribute("stroke-linecap","round");
+      viewport.appendChild(p);
+    }
+
+    (function drawEdges(n){
+      var children = n.children || [];
+      if(!children.length) return;
+      var rows = n._rows;
+      var edgeColor = n.chefeId ? colorsForNode(n).edge : "#9CA3AF";
+      var spineX = n.x + PAD;
+      var railX = Infinity;
+      rows.forEach(function(row){ row.forEach(function(c){ railX = Math.min(railX, c.x+PAD - c.w/2); }); });
+      railX -= 16;
+
+      var firstRow = rows[0];
+      var firstBusY = firstRow[0].y + PAD - STUB;
+      var parentX = n.x+PAD, parentY = n.y+n.h+PAD;
+      drawLine(parentX, parentY, parentX, firstBusY, edgeColor);
+      var xsFirst = firstRow.map(function(c){ return c.x+PAD; });
+      var minX1=Math.min.apply(null,xsFirst), maxX1=Math.max.apply(null,xsFirst);
+      var spanMin = Math.min(minX1, parentX, railX), spanMax = Math.max(maxX1, parentX, railX);
+      drawLine(spanMin, firstBusY, spanMax, firstBusY, edgeColor);
+      firstRow.forEach(function(c){ drawLine(c.x+PAD, firstBusY, c.x+PAD, c.y+PAD, colorsForNode(c).edge); });
+
+      var railY = firstBusY;
+      for(var ri=1; ri<rows.length; ri++){
+        var row = rows[ri];
+        var busY = row[0].y + PAD - STUB;
+        drawLine(railX, railY, railX, busY, edgeColor);
+        var xs = row.map(function(c){ return c.x+PAD; });
+        var minX=Math.min.apply(null,xs), maxX=Math.max.apply(null,xs);
+        drawLine(Math.min(minX,railX), busY, Math.max(maxX,railX), busY, edgeColor);
+        row.forEach(function(c){ drawLine(c.x+PAD, busY, c.x+PAD, c.y+PAD, colorsForNode(c).edge); });
+        railY = busY;
+      }
+      children.forEach(drawEdges);
+    })(root);
+
+    function svgText(x,y,txt,opts){
+      var t = document.createElementNS(svgNS,"text");
+      t.setAttribute("x",x); t.setAttribute("y",y);
+      t.setAttribute("text-anchor", opts.anchor||"middle");
+      t.setAttribute("font-family","Arial, sans-serif");
+      t.setAttribute("font-weight", opts.weight||"400");
+      t.setAttribute("font-size", opts.size||"11");
+      t.setAttribute("fill", opts.fill||"#14171B");
+      t.textContent = txt;
+      return t;
+    }
+
+    (function drawNodes(n){
+      var cx = n.x+PAD, top = n.y+PAD, w=n.w, h=n.h;
+      var col = colorsForNode(n);
+      var g = document.createElementNS(svgNS,"g");
+      var rect = document.createElementNS(svgNS,"rect");
+      rect.setAttribute("x",cx-w/2); rect.setAttribute("y",top); rect.setAttribute("width",w); rect.setAttribute("height",h); rect.setAttribute("rx",10);
+      rect.setAttribute("fill",col.fill); rect.setAttribute("stroke",col.stroke); rect.setAttribute("stroke-width","1.8");
+      g.appendChild(rect);
+
+      var titleSize = n.kind==="coord" ? "15" : (n.kind==="chefe" ? "14" : "12");
+      var cursorY = top+17;
+      g.appendChild(svgText(cx, cursorY, truncateLabel(n.label,26), {weight:"700", size:titleSize, fill:col.text}));
+      if(n.sub){ cursorY += SUB_LINE_H; g.appendChild(svgText(cx, cursorY, truncateLabel(n.sub,36), {size:"10", fill:col.sub})); }
+      if(n.kind==="setor"){
+        if(n.namesList && n.namesList.length){
+          n.namesList.forEach(function(nm){ cursorY += NAME_LINE_H; g.appendChild(svgText(cx-w/2+10, cursorY, truncateLabel(nm,28), {anchor:"start", size:"9.3", fill:"#374151"})); });
+        } else if(typeof n.count === "number"){
+          cursorY += BADGE_LINE_H;
+          g.appendChild(svgText(cx, cursorY, n.count+" brigadista"+(n.count===1?"":"s"), {weight:"700", size:"10.5", fill:col.stroke}));
+        }
+      }
+      viewport.appendChild(g);
+      (n.children||[]).forEach(drawNodes);
+    })(root);
+
+    wrap.style.background="#fff"; wrap.style.borderRadius="8px"; wrap.style.padding="10px";
+    wrap.appendChild(svg);
+
+    orgViewCtx = {svg:svg, viewport:viewport, view:{x:0,y:0,scale:1}, totalW:totalW, totalH:totalH, animTimer:null};
+    svg.style.cursor = "grab";
+    svg.onwheel = function(evt){
+      evt.preventDefault();
+      var p = orgSvgPoint(evt);
+      var factor = evt.deltaY<0 ? 1.15 : 1/1.15;
+      var ns = clampNum(orgViewCtx.view.scale*factor, 0.2, 4);
+      orgViewCtx.view.x = p.x - (p.x-orgViewCtx.view.x)*(ns/orgViewCtx.view.scale);
+      orgViewCtx.view.y = p.y - (p.y-orgViewCtx.view.y)*(ns/orgViewCtx.view.scale);
+      orgViewCtx.view.scale = ns; applyOrgView();
+    };
+    svg.onmousedown = function(evt){
+      orgDrag.active = true; var p = orgSvgPoint(evt);
+      orgDrag.startX=p.x; orgDrag.startY=p.y; orgDrag.viewStartX=orgViewCtx.view.x; orgDrag.viewStartY=orgViewCtx.view.y;
+      svg.style.cursor = "grabbing";
+    };
+    svg.ontouchstart = function(evt){
+      orgDrag.active = true; var p = orgSvgPoint(evt);
+      orgDrag.startX=p.x; orgDrag.startY=p.y; orgDrag.viewStartX=orgViewCtx.view.x; orgDrag.viewStartY=orgViewCtx.view.y;
+    };
+    applyOrgView();
+  }
+  document.getElementById("orgCompactChk").addEventListener("change", function(){ renderOrg(); });
+
+  document.getElementById("orgFullscreenBtn").addEventListener("click", function(){
+    var wrap = document.getElementById("orgWrap");
+    var req = wrap.requestFullscreen || wrap.webkitRequestFullscreen || wrap.msRequestFullscreen;
+    if(req){ req.call(wrap); } else { alert("Seu navegador não suporta tela cheia aqui. Use os botões de baixar imagem/PDF."); }
+  });
+
+  function svgToPngDataUrl(svgEl, callback){
+    var scale = 2;
+    var w = parseFloat(svgEl.getAttribute("width")), h = parseFloat(svgEl.getAttribute("height"));
+    var clone = svgEl.cloneNode(true);
+    clone.setAttribute("xmlns","http://www.w3.org/2000/svg");
+    var cloneViewport = clone.querySelector("#orgViewport");
+    if(cloneViewport) cloneViewport.removeAttribute("transform");
+    clone.removeAttribute("style"); clone.setAttribute("width",w); clone.setAttribute("height",h);
+    var svgStr = new XMLSerializer().serializeToString(clone);
+    var url = URL.createObjectURL(new Blob([svgStr], {type:"image/svg+xml;charset=utf-8"}));
+    var img = new Image();
+    img.onload = function(){
+      var canvas = document.createElement("canvas");
+      canvas.width = w*scale; canvas.height = h*scale;
+      var ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      URL.revokeObjectURL(url);
+      callback(canvas.toDataURL("image/png"), w, h);
+    };
+    img.onerror = function(){ URL.revokeObjectURL(url); alert("Não foi possível gerar a imagem do organograma."); };
+    img.src = url;
+  }
+  document.getElementById("exportPngBtn").addEventListener("click", function(){
+    var svg = document.getElementById("orgSvg");
+    if(!svg){ alert("Cadastre setores/chefes primeiro."); return; }
+    svgToPngDataUrl(svg, function(dataUrl){ var a=document.createElement("a"); a.href=dataUrl; a.download="organograma-brigada.png"; a.click(); });
+  });
+  document.getElementById("exportPdfBtn").addEventListener("click", function(){
+    var svg = document.getElementById("orgSvg");
+    if(!svg){ alert("Cadastre setores/chefes primeiro."); return; }
+    if(typeof window.jspdf === "undefined"){ alert("A biblioteca de PDF não carregou — tente novamente."); return; }
+    svgToPngDataUrl(svg, function(dataUrl, w, h){
+      var pxToPt = 0.75, pw=w*pxToPt, ph=h*pxToPt;
+      var pdf = new window.jspdf.jsPDF({orientation: w>h?"landscape":"portrait", unit:"pt", format:[pw,ph]});
+      pdf.addImage(dataUrl,"PNG",0,0,pw,ph);
+      pdf.save("organograma-brigada.pdf");
+    });
+  });
+
+  // ---------- CURSOS ESPECIALISTAS (relatório) ----------
+  function allBrigadistasReport(){
+    var list = [];
+    state.setores.forEach(function(s){
+      s.brigadistas.forEach(function(b){
+        var chefeId = (b.chefeOverrideId && state.grupos.some(function(g){return g.id===b.chefeOverrideId;})) ? b.chefeOverrideId : s.grupoId;
+        list.push({b:b, setor:s.nome, chefeId:chefeId, chefeNome: grupoLabel(chefeId), semChefe: !chefeId});
+      });
+    });
+    return list;
+  }
+
+  var compSearch = "";
+  function renderComp(){
+    var wrap = document.getElementById("compReport");
+    var allFull = allBrigadistasReport();
+    if(allFull.length === 0){
+      wrap.innerHTML = '<div class="empty">Importe a planilha ou cadastre brigadistas para ver este relatório.</div>';
+      return;
+    }
+    var term = compSearch.trim().toLowerCase();
+    var all = allFull.filter(function(x){
+      return !term || x.b.nome.toLowerCase().indexOf(term)>-1 || x.setor.toLowerCase().indexOf(term)>-1;
+    });
+    var html = "";
+    var foraDaArvore = all.filter(function(x){ return x.semChefe && TREINAMENTOS.some(function(tr){ return x.b.treinamentos[tr.id].feito; }); });
+    if(foraDaArvore.length){
+      html += '<div class="mod-block" style="border:1px solid var(--danger);border-radius:8px;padding:10px 12px;background:rgba(228,87,76,.08)">';
+      html += '<h3 style="color:var(--danger)">⚠ Com treinamento, mas fora da árvore (sem chefe) <span class="count">('+foraDaArvore.length+')</span></h3>';
+      html += '<p class="hint" style="margin:0 0 6px">Corrija o chefe do setor na aba Estrutura/Setores.</p>';
+      html += foraDaArvore.map(function(x){ return '<span class="pill">'+esc(x.b.nome||"(sem nome)")+' — '+esc(x.setor)+'</span>'; }).join("");
+      html += '</div>';
+    }
+
+    TREINAMENTOS.forEach(function(tr){
+      var comCurso = all.filter(function(x){ return x.b.treinamentos[tr.id].feito; });
+      html += '<div class="mod-block"><h3>'+esc(tr.label)+' ('+tr.horas+'h) <span class="count">('+comCurso.length+' brigadista'+(comCurso.length===1?"":"s")+')</span></h3>';
+      if(comCurso.length===0){
+        html += '<p class="hint" style="margin:0">Nenhum brigadista com este treinamento.</p>';
+      } else {
+        var porChefe = {};
+        comCurso.forEach(function(x){
+          var key = x.chefeId || "sem-chefe";
+          porChefe[key] = porChefe[key] || {nome: x.chefeNome || "(sem chefe definido)", chefeId:x.chefeId, itens:[]};
+          porChefe[key].itens.push(x);
+        });
+        Object.keys(porChefe).sort(function(a,b){ return porChefe[a].nome.localeCompare(porChefe[b].nome); }).forEach(function(key){
+          var grupo = porChefe[key];
+          var col = grupo.chefeId ? chefeColor(grupo.chefeId) : {bg:"#E5E7EB", border:"#9CA3AF", text:"#14171B"};
+          html += '<div class="chefe-group-header" style="background:'+col.bg+'22;border-left-color:'+col.border+';color:'+col.border+'"><strong>Chefe: '+esc(grupo.nome)+'</strong></div>';
+          html += '<div style="margin:2px 0 8px 4px">';
+          html += grupo.itens.map(function(x){ return '<span class="pill">'+esc(x.b.nome||"(sem nome)")+' — '+esc(x.setor)+'</span>'; }).join("");
+          html += '</div>';
+        });
+      }
+      html += '</div>';
+    });
+
+    var semNenhum = all.filter(function(x){ return TREINAMENTOS.every(function(tr){ return !x.b.treinamentos[tr.id].feito; }); });
+    html += '<div class="mod-block"><h3>Sem nenhum treinamento <span class="count">('+semNenhum.length+')</span></h3>';
+    if(semNenhum.length===0){ html += '<p class="hint" style="margin:0">Todos os brigadistas têm ao menos um treinamento.</p>'; }
+    else { html += semNenhum.map(function(x){ return '<span class="pill">'+esc(x.b.nome||"(sem nome)")+' — '+esc(x.setor)+'</span>'; }).join(""); }
+    html += '</div>';
+
+    wrap.innerHTML = html;
+  }
+
+  // ---------- PRINT ----------
+  function printTab(tabId){
+    var el = document.getElementById(tabId);
+    el.classList.add("print-target");
+    window.print();
+    setTimeout(function(){ el.classList.remove("print-target"); }, 500);
+  }
+  document.getElementById("printPainelBtn").addEventListener("click", function(){ printTab("tab-painel"); });
+  document.getElementById("printSetoresBtn").addEventListener("click", function(){ printTab("tab-setores"); });
+  document.getElementById("setoresSearch").addEventListener("input", function(e){ setoresSearch = e.target.value; renderSetores(); });
+  document.getElementById("printControleBtn").addEventListener("click", function(){ printTab("tab-controle"); });
+  document.getElementById("compSearch").addEventListener("input", function(e){ compSearch = e.target.value; renderComp(); });
+
+  document.getElementById("printOrgBtn").addEventListener("click", function(){
+    document.getElementById("tab-organograma").classList.add("print-target");
+    window.print();
+    setTimeout(function(){ document.getElementById("tab-organograma").classList.remove("print-target"); }, 500);
+  });
+  document.getElementById("printCompBtn").addEventListener("click", function(){
+    document.getElementById("tab-complementar").classList.add("print-target");
+    window.print();
+    setTimeout(function(){ document.getElementById("tab-complementar").classList.remove("print-target"); }, 500);
+  });
+  document.getElementById("printAllBtn").addEventListener("click", function(){
+    renderOrg(); renderComp(); renderControle();
+    ["tab-organograma","tab-complementar","tab-controle"].forEach(function(id){ document.getElementById(id).classList.add("print-target"); });
+    window.print();
+    setTimeout(function(){ ["tab-organograma","tab-complementar","tab-controle"].forEach(function(id){ document.getElementById(id).classList.remove("print-target"); }); }, 500);
+  });
+
+  // ---------- PAINEL (DASHBOARD) ----------
+  function renderDashboard(){
+    var all = allBrigadistasFlat().map(function(x){ return x.b; });
+    document.getElementById("dashValidadeTxt").textContent = (state.validadeMeses||12)+" meses";
+
+    var geral = document.getElementById("dashGeral");
+    var ativos = all.filter(function(b){ return b.status!=="Afastamento"; }).length;
+    var afastados = all.length - ativos;
+    var ind = all.filter(function(b){ return b.industriaAgro==="IND"; }).length;
+    var agro = all.filter(function(b){ return b.industriaAgro==="AGRO"; }).length;
+    var semChefeCount = state.setores.filter(function(s){ return !s.grupoId; }).length;
+    geral.innerHTML =
+      '<div class="dash-card"><div class="num">'+all.length+'</div><div class="lbl">Brigadistas cadastrados</div></div>' +
+      '<div class="dash-card"><div class="num">'+state.setores.length+'</div><div class="lbl">Setores</div></div>' +
+      '<div class="dash-card"><div class="num">'+state.grupos.length+'</div><div class="lbl">Chefes</div></div>' +
+      '<div class="dash-card"><div class="num">'+ativos+'</div><div class="lbl">Ativos <span class="dash-pill dp-bad" style="display:'+(afastados?"inline-block":"none")+'">'+afastados+' afastado(s)</span></div></div>' +
+      '<div class="dash-card"><div class="num">'+semChefeCount+'</div><div class="lbl">Setores sem chefe</div></div>' +
+      '<div class="dash-card"><div class="num">'+ind+' / '+agro+'</div><div class="lbl">Indústria / Agro</div></div>';
+
+    var treinos = document.getElementById("dashTreinos");
+    treinos.innerHTML = "";
+    TREINAMENTOS.forEach(function(tr){
+      var ok=0, warn=0, bad=0, none=0;
+      all.forEach(function(b){
+        var st = statusTreino(b.treinamentos[tr.id]);
+        if(st.tone==="ok") ok++; else if(st.tone==="warn") warn++; else if(st.tone==="bad") bad++; else none++;
+      });
+      var card = document.createElement("div");
+      card.className = "dash-card";
+      card.innerHTML =
+        '<div class="num">'+(ok+warn+bad)+'</div><div class="lbl">'+esc(tr.label)+' ('+tr.horas+'h) concluídos</div>' +
+        '<div class="dash-sub">' +
+          '<span class="dash-pill dp-ok">'+ok+' válidos</span>' +
+          '<span class="dash-pill dp-warn">'+warn+' vencendo</span>' +
+          '<span class="dash-pill dp-bad">'+bad+' vencidos</span>' +
+          '<span class="dash-pill dp-none">'+none+' pendentes</span>' +
+        '</div>';
+      treinos.appendChild(card);
+    });
+
+    var avisos = document.getElementById("dashAvisos");
+    var foraArvore = all.filter(function(b){
+      return TREINAMENTOS.some(function(tr){ return b.treinamentos[tr.id].feito; });
+    });
+    var listaForaArvore = allBrigadistasFlat().filter(function(x){ return !x.setor.grupoId && TREINAMENTOS.some(function(tr){ return x.b.treinamentos[tr.id].feito; }); });
+    if(all.length===0){
+      avisos.innerHTML = '<h2>Avisos</h2><p class="hint" style="margin:0">Importe a planilha na aba Estrutura para começar.</p>';
+    } else if(listaForaArvore.length===0 && semChefeCount===0){
+      avisos.innerHTML = '<h2>Avisos</h2><p class="hint" style="margin:0">Nenhum pendência estrutural encontrada — todos os setores têm chefe.</p>';
+    } else {
+      var html = '<h2>Avisos</h2>';
+      if(semChefeCount>0) html += '<p class="hint" style="margin:0 0 6px">⚠ '+semChefeCount+' setor(es) sem chefe definido.</p>';
+      if(listaForaArvore.length>0){
+        html += '<p class="hint" style="margin:0 0 6px">⚠ '+listaForaArvore.length+' brigadista(s) com treinamento mas fora da árvore:</p>';
+        html += listaForaArvore.map(function(x){ return '<span class="pill">'+esc(x.b.nome||"(sem nome)")+' — '+esc(x.setor.nome)+'</span>'; }).join("");
+      }
+      avisos.innerHTML = html;
+    }
+  }
+
+  // ---------- MODELO E IMPORTAÇÃO DE PLANILHA ----------
+  var SHEET_HEADERS = ["ID","Nome do Brigadista","Função","Setor","Turno","Equipe","Supervisor","E-mail Supervisor","Status","Indústria ou Agro",
+    "Brigada Básica 32h","Resgate em Altura 16h","Resgate em Espaço Confinado 32h","Resgate com Produtos Químicos 32h","Sistema de Comando de Incidentes 16h"];
+
+  document.getElementById("downloadTemplateBtn").addEventListener("click", function(){
+    if(typeof XLSX === "undefined"){ alert("A biblioteca de Excel não carregou — tente novamente."); return; }
+    var rows = [SHEET_HEADERS, [
+      "12345","João da Silva","Auxiliar de Almoxarifado","Almoxarifado","1º Turno","Equipe A","Nome do Supervisor","supervisor@empresa.com","Ativo","IND",
+      "12/01/2025","Não","15/03/2025","Não","Não"
+    ]];
+    var wb = XLSX.utils.book_new();
+    var ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = SHEET_HEADERS.map(function(h){ return {wch: Math.max(16, h.length)}; });
+    XLSX.utils.book_append_sheet(wb, ws, "Brigadistas");
+    XLSX.writeFile(wb, "modelo-planilha-brigadistas.xlsx");
+  });
+
+  function normKey(s){ return (s||"").toString().trim().toLowerCase(); }
+  function truthyCell(v){
+    if(typeof v === "boolean") return v;
+    var s = normKey(v);
+    if(s==="n/a"||s==="na"||s==="não"||s==="nao"||s==="não válido"||s==="invalido"||s==="inválido") return false;
+    if(s==="sim"||s==="s"||s==="x"||s==="1"||s==="true"||s==="yes"||s==="válido"||s==="valido"||s==="ok") return true;
+    if(parseDateFlexible(v)) return true;
+    return false;
+  }
+  function cellAsDate(v){
+    var s = (v||"").toString().trim();
+    var d = parseDateFlexible(s);
+    return d ? dateToBR(d) : "";
+  }
+  function findColByHints(header, hints){
+    for(var i=0;i<header.length;i++){ for(var j=0;j<hints.length;j++){ if(header[i].indexOf(hints[j])>-1) return i; } }
+    return -1;
+  }
+  function parseImportedRows(aoa){
+    if(!aoa || !aoa.length) return {error:"Planilha vazia."};
+    var header = aoa[0].map(normKey);
+    var col = {
+      id: findColByHints(header, ["id","matríc","matric"]),
+      nome: findColByHints(header, ["nome"]),
+      funcao: findColByHints(header, ["funç","func"]),
+      setor: findColByHints(header, ["setor"]),
+      turno: findColByHints(header, ["turno"]),
+      equipe: findColByHints(header, ["equipe"]),
+      supervisor: -1,
+      emailSup: -1,
+      status: findColByHints(header, ["status"]),
+      indAgro: findColByHints(header, ["indústria","industria","agro"]),
+      basica: findColByHints(header, ["básica","basica"]),
+      altura: findColByHints(header, ["altura"]),
+      confinado: findColByHints(header, ["confinado"]),
+      quimicos: findColByHints(header, ["quím","quim"]),
+      sci: findColByHints(header, ["comando","sci"])
+    };
+    // supervisor vs e-mail supervisor: find both, "e-mail" one first, then plain supervisor excluding it
+    var emailIdx = findColByHints(header, ["e-mail","email"]);
+    col.emailSup = emailIdx;
+    var supHints = ["supervisor"];
+    for(var i=0;i<header.length;i++){
+      if(i===emailIdx) continue;
+      if(supHints.some(function(h){ return header[i].indexOf(h)>-1; })){ col.supervisor = i; break; }
+    }
+    if(col.nome === -1 || col.setor === -1){
+      return {error:"A planilha precisa ter pelo menos as colunas Nome e Setor. Use o modelo para conferir o formato."};
+    }
+    var out = [];
+    for(var r=1;r<aoa.length;r++){
+      var row = aoa[r];
+      if(!row || !row[col.nome] || !String(row[col.nome]).trim()) continue;
+      function get(i){ return i>-1 ? String(row[i]||"").trim() : ""; }
+      out.push({
+        matricula: get(col.id), nome: get(col.nome), funcao: get(col.funcao),
+        setor: get(col.setor), turno: get(col.turno), equipe: get(col.equipe),
+        supervisor: get(col.supervisor), emailSupervisor: get(col.emailSup),
+        status: get(col.status) || "Ativo",
+        industriaAgro: (function(){ var v=normKey(get(col.indAgro)); if(v.indexOf("agro")>-1) return "AGRO"; if(v.indexOf("ind")>-1) return "IND"; return ""; })(),
+        basica: {feito: truthyCell(row[col.basica]), data: cellAsDate(row[col.basica])},
+        altura: {feito: truthyCell(row[col.altura]), data: cellAsDate(row[col.altura])},
+        confinado: {feito: truthyCell(row[col.confinado]), data: cellAsDate(row[col.confinado])},
+        quimicos: {feito: truthyCell(row[col.quimicos]), data: cellAsDate(row[col.quimicos])},
+        sci: {feito: truthyCell(row[col.sci]), data: cellAsDate(row[col.sci])}
+      });
+    }
+    if(!out.length) return {error:"Nenhuma linha com Nome preenchido foi encontrada."};
+    return {rows: out};
+  }
+
+  function findOrCreateSetorByName(nome){
+    nome = (nome||"").trim() || "(sem setor)";
+    var existing = state.setores.find(function(s){ return normKey(s.nome)===normKey(nome); });
+    if(existing) return existing;
+    var s = {id:uid(), nome:nome, grupoId:null, brigadistas:[]};
+    state.setores.push(s); return s;
+  }
+
+  document.getElementById("importSheetBtn").addEventListener("click", function(){ document.getElementById("importSheetFile").click(); });
+  document.getElementById("importSheetFile").addEventListener("change", function(e){
+    var file = e.target.files[0]; e.target.value = "";
+    if(!file) return;
+    if(typeof XLSX === "undefined"){ alert("A biblioteca de planilhas não carregou — tente novamente."); return; }
+    var reader = new FileReader();
+    reader.onload = function(evt){
+      try{
+        var wb = XLSX.read(evt.target.result, {type:"array"});
+        var aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, raw:false, defval:""});
+        var parsed = parseImportedRows(aoa);
+        if(parsed.error){ alert("Não consegui importar: " + parsed.error); return; }
+
+        var novosSetores = 0;
+        parsed.rows.forEach(function(row){
+          var existiaAntes = state.setores.some(function(s){ return normKey(s.nome)===normKey(row.setor||"(sem setor)"); });
+          var setor = findOrCreateSetorByName(row.setor);
+          if(!existiaAntes) novosSetores++;
+          setor.brigadistas.push({
+            id: uid(), matricula: row.matricula, nome: row.nome, funcao: row.funcao,
+            turno: row.turno, equipe: row.equipe, supervisor: row.supervisor, emailSupervisor: row.emailSupervisor,
+            status: row.status, industriaAgro: row.industriaAgro,
+            tipo:"organico", exclusiva:false, isLiderSetor:false, chefeOverrideId:null,
+            treinamentos: {basica:row.basica, altura:row.altura, confinado:row.confinado, quimicos:row.quimicos, sci:row.sci},
+            equipeResgate: novoEquipeResgate(), observacoes:""
+          });
+        });
+
+        save(); renderAll();
+        alert("Importação concluída: " + parsed.rows.length + " brigadista(s) adicionados" + (novosSetores?(" em " + novosSetores + " setor(es) novo(s)"):"") + ". Agora crie os chefes e atribua os setores a eles.");
+      }catch(err){
+        alert("Não consegui ler essa planilha. Confira se é um arquivo .xlsx, .xls ou .csv válido.");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  // ---------- EXCEL EXPORT ----------
+  document.getElementById("exportExcelBtn").addEventListener("click", function(){
+    if(typeof XLSX === "undefined"){ alert("A biblioteca de Excel não carregou — tente novamente."); return; }
+    var rows = [SHEET_HEADERS.concat(["Chefe","Líder do setor"])];
+    state.setores.forEach(function(s){
+      s.brigadistas.forEach(function(b){
+        var chefeId = (b.chefeOverrideId && state.grupos.some(function(g){return g.id===b.chefeOverrideId;})) ? b.chefeOverrideId : s.grupoId;
+        rows.push([
+          b.matricula||"", b.nome||"", b.funcao||"", s.nome, b.turno||"", b.equipe||"",
+          b.supervisor||"", b.emailSupervisor||"", b.status||"Ativo", b.industriaAgro||"",
+          b.treinamentos.basica.feito?(b.treinamentos.basica.data||"Sim"):"Não",
+          b.treinamentos.altura.feito?(b.treinamentos.altura.data||"Sim"):"Não",
+          b.treinamentos.confinado.feito?(b.treinamentos.confinado.data||"Sim"):"Não",
+          b.treinamentos.quimicos.feito?(b.treinamentos.quimicos.data||"Sim"):"Não",
+          b.treinamentos.sci.feito?(b.treinamentos.sci.data||"Sim"):"Não",
+          grupoLabel(chefeId)||"", b.isLiderSetor?"Sim":"Não"
+        ]);
+      });
+    });
+    var wb = XLSX.utils.book_new();
+    var ws = XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, "Brigadistas");
+    var estrutura = [["Coordenador", state.coord.enabled?(state.coord.nome||"(a definir)"):"(não definido)"],[""],["Chefe","Nome de quem é o chefe"]];
+    state.grupos.forEach(function(g){ estrutura.push([g.nome, g.chefe||"(a definir)"]); });
+    var ws2 = XLSX.utils.aoa_to_sheet(estrutura);
+    XLSX.utils.book_append_sheet(wb, ws2, "Estrutura");
+    XLSX.writeFile(wb, "brigada-incendio-npt017.xlsx");
+  });
+
+  // ---------- SALVAR / JSON / RESET ----------
+  function downloadJsonBackup(){
+    var blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    var ts = new Date().toISOString().slice(0,16).replace(/[-T:]/g,"");
+    a.download = "backup-brigada-"+ts+".json"; a.click();
+  }
+  document.getElementById("saveNowBtn").addEventListener("click", function(){ save(); });
+  document.getElementById("exportJsonBtn").addEventListener("click", function(){
+    var blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+    var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "sistema-brigada.json"; a.click();
+  });
+  document.getElementById("importJsonBtn").addEventListener("click", function(){ document.getElementById("importFile").click(); });
+  document.getElementById("importFile").addEventListener("change", function(e){
+    var file = e.target.files[0]; if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{ state = JSON.parse(reader.result); if(!state.validadeMeses) state.validadeMeses=12; if(!state.chamadas) state.chamadas=[]; save(); renderAll(); }
+      catch(err){ alert("Arquivo inválido."); }
+    };
+    reader.readAsText(file); e.target.value = "";
+  });
+  function resetTudo(){
+    state = {coord:{enabled:false, nome:""}, grupos:[], setores:[], validadeMeses:12, chamadas:[]};
+    save(); renderAll();
+  }
+  document.getElementById("resetAllBtn").addEventListener("click", function(){
+    if(confirm("Apagar tudo — coordenador, chefes, setores e brigadistas — e começar do zero?")) resetTudo();
+  });
+
+  document.getElementById("cloudUrlInput").value = getCloudUrl();
+  document.getElementById("cloudSaveBtn").addEventListener("click", function(){
+    var url = document.getElementById("cloudUrlInput").value.trim();
+    setCloudUrl(url);
+    if(url){ setCloudStatus("URL salva. Testando..."); cloudPush(true); }
+    else { setCloudStatus("Nuvem desligada — salvando só neste dispositivo."); }
+  });
+  document.getElementById("cloudPullBtn").addEventListener("click", function(){ cloudPull(true); });
+  document.getElementById("cloudPushBtn").addEventListener("click", function(){ cloudPush(true); });
+
+  // ---------- EQUIPES DE RESGATE ----------
+  var equipesSearch = "";
+  function findBrigadistaById(bid){
+    var found = null;
+    state.setores.some(function(s){
+      var b = s.brigadistas.find(function(x){ return x.id === bid; });
+      if(b){ found = b; return true; }
+      return false;
+    });
+    return found;
+  }
+
+  function renderEquipes(){
+    var wrap = document.getElementById("equipesContent");
+    var all = allBrigadistasReport(); // {b, setor(nome), chefeId, chefeNome, semChefe}
+    if(all.length === 0){
+      wrap.innerHTML = '<div class="card"><div class="empty">Cadastre brigadistas para montar as equipes de resgate.</div></div>';
+      return;
+    }
+    var term = equipesSearch.trim().toLowerCase();
+    var filtered = all.filter(function(x){
+      if(!term) return true;
+      return x.b.nome.toLowerCase().indexOf(term)>-1 || x.setor.toLowerCase().indexOf(term)>-1;
+    });
+
+    var porChefe = {};
+    var semChefe = [];
+    filtered.forEach(function(x){
+      if(x.semChefe){ semChefe.push(x); return; }
+      porChefe[x.chefeId] = porChefe[x.chefeId] || {nome:x.chefeNome, itens:[]};
+      porChefe[x.chefeId].itens.push(x);
+    });
+    var chefeIds = Object.keys(porChefe).sort(function(a,b){ return porChefe[a].nome.localeCompare(porChefe[b].nome); });
+
+    function tableFor(itens){
+      var h = '<div class="equipe-table-wrap"><table><thead><tr><th>Nome</th><th>Setor</th><th>Turno</th>' +
+        EQUIPES_TIPOS.map(function(t){ return '<th>'+esc(t.short)+'</th>'; }).join("") +
+        '<th>Observações</th></tr></thead><tbody>';
+      itens.forEach(function(x){
+        var eq = getEquipe(x.b);
+        h += '<tr data-bid="'+x.b.id+'">' +
+          '<td>'+esc(x.b.nome||"(sem nome)")+'</td>' +
+          '<td>'+esc(x.setor)+'</td>' +
+          '<td>'+esc(x.b.turno||"—")+'</td>' +
+          EQUIPES_TIPOS.map(function(t){
+            var treinado = x.b.treinamentos[t.treinoId].feito;
+            return '<td style="text-align:center"><input type="checkbox" data-eq="'+t.id+'" '+(eq[t.id]?"checked":"")+' title="'+(treinado?"Treinado":"Sem treinamento registrado")+'">'+(treinado?'<div class="trained-tag" style="margin-top:2px">treinado</div>':'')+'</td>';
+          }).join("") +
+          '<td><input type="text" data-obs="1" value="'+esc(x.b.observacoes||"")+'" placeholder="Turno, local, restrições..." style="min-width:180px"></td>' +
+          '</tr>';
+      });
+      h += '</tbody></table></div>';
+      return h;
+    }
+
+    var html = "";
+    if(chefeIds.length === 0 && semChefe.length === 0){
+      html = '<div class="card"><p class="hint" style="margin:0">Nenhum resultado para essa busca.</p></div>';
+    } else {
+      html += '<div class="card">';
+      chefeIds.forEach(function(chefeId){
+        var grupo = porChefe[chefeId];
+        var col = chefeColor(chefeId);
+        html += '<div class="chefe-group-header" style="background:'+col.bg+'22;border-left-color:'+col.border+';color:'+col.border+'"><strong>Chefe: '+esc(grupo.nome)+'</strong> <span class="hint" style="margin:0">('+grupo.itens.length+' brigadista'+(grupo.itens.length===1?"":"s")+')</span></div>';
+        html += tableFor(grupo.itens);
+      });
+      if(semChefe.length){
+        html += '<div class="chefe-group-header" style="background:#E5E7EB;border-left-color:#9CA3AF;color:#374151"><strong>Sem chefe definido</strong> <span class="hint" style="margin:0">('+semChefe.length+')</span></div>';
+        html += tableFor(semChefe);
+      }
+      html += '</div>';
+    }
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll('tr[data-bid]').forEach(function(tr){
+      var bid = tr.dataset.bid;
+      tr.querySelectorAll('[data-eq]').forEach(function(chk){
+        chk.addEventListener("change", function(e){
+          var found = findBrigadistaById(bid);
+          if(!found) return;
+          getEquipe(found)[chk.dataset.eq] = e.target.checked;
+          save();
+        });
+      });
+      var obsInput = tr.querySelector('[data-obs]');
+      if(obsInput){
+        obsInput.addEventListener("input", function(e){
+          var found = findBrigadistaById(bid);
+          if(!found) return;
+          found.observacoes = e.target.value;
+          save();
+        });
+      }
+    });
+  }
+  document.getElementById("equipesSearch").addEventListener("input", function(e){ equipesSearch = e.target.value; renderEquipes(); });
+
+  document.getElementById("printEquipesBtn").addEventListener("click", function(){
+    document.getElementById("tab-equipes").classList.add("print-target");
+    window.print();
+    setTimeout(function(){ document.getElementById("tab-equipes").classList.remove("print-target"); }, 500);
+  });
+  document.getElementById("exportEquipesExcelBtn").addEventListener("click", function(){
+    if(typeof XLSX === "undefined"){ alert("A biblioteca de Excel não carregou — tente novamente."); return; }
+    var headers = ["Nome","Setor","Turno","Chefe"].concat(EQUIPES_TIPOS.map(function(t){ return t.label; })).concat(["Observações"]);
+    var rows = [headers];
+    allBrigadistasReport().forEach(function(x){
+      var eq = getEquipe(x.b);
+      rows.push([x.b.nome||"", x.setor, x.b.turno||"", x.chefeNome||"(sem chefe)"]
+        .concat(EQUIPES_TIPOS.map(function(t){ return eq[t.id]?"Sim":"Não"; }))
+        .concat([x.b.observacoes||""]));
+    });
+    var wb = XLSX.utils.book_new();
+    var ws = XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, "Equipes de Resgate");
+    XLSX.writeFile(wb, "equipes-de-resgate.xlsx");
+  });
+
+  // ---------- TREINAMENTO BÁSICO (CONTROLE SEPARADO) ----------
+  var basicaSearch = "";
+  function renderBasica(){
+    var wrap = document.getElementById("basicaContent");
+    var resumoWrap = document.getElementById("basicaResumo");
+    var all = allBrigadistasReport();
+    if(all.length === 0){
+      resumoWrap.innerHTML = "";
+      wrap.innerHTML = '<div class="card"><div class="empty">Cadastre brigadistas para controlar o treinamento básico.</div></div>';
+      return;
+    }
+
+    var ok=0, warn=0, bad=0, none=0;
+    all.forEach(function(x){
+      var st = statusTreino(x.b.treinamentos.basica);
+      if(st.tone==="ok") ok++; else if(st.tone==="warn") warn++; else if(st.tone==="bad") bad++; else none++;
+    });
+    resumoWrap.innerHTML =
+      '<div class="dash-card"><div class="num">'+all.length+'</div><div class="lbl">Brigadistas no total</div></div>' +
+      '<div class="dash-card"><div class="num">'+ok+'</div><div class="lbl">Básico válido</div></div>' +
+      '<div class="dash-card"><div class="num">'+warn+'</div><div class="lbl">Vencendo em breve</div></div>' +
+      '<div class="dash-card"><div class="num">'+bad+'</div><div class="lbl">Vencido</div></div>' +
+      '<div class="dash-card"><div class="num">'+none+'</div><div class="lbl">Nunca fez o básico</div></div>';
+
+    var term = basicaSearch.trim().toLowerCase();
+    var filtered = all.filter(function(x){
+      return !term || x.b.nome.toLowerCase().indexOf(term)>-1 || x.setor.toLowerCase().indexOf(term)>-1;
+    });
+    var porChefe = {};
+    var semChefe = [];
+    filtered.forEach(function(x){
+      if(x.semChefe){ semChefe.push(x); return; }
+      porChefe[x.chefeId] = porChefe[x.chefeId] || {nome:x.chefeNome, itens:[]};
+      porChefe[x.chefeId].itens.push(x);
+    });
+    var chefeIds = Object.keys(porChefe).sort(function(a,b){ return porChefe[a].nome.localeCompare(porChefe[b].nome); });
+
+    function tableFor(itens){
+      var h = '<div class="equipe-table-wrap"><table><thead><tr><th>Nome</th><th>Setor</th><th>Turno</th><th>Data de conclusão</th><th>Status</th><th>Observações</th></tr></thead><tbody>';
+      itens.forEach(function(x){
+        var t = x.b.treinamentos.basica;
+        var st = statusTreino(t);
+        h += '<tr data-bid="'+x.b.id+'">' +
+          '<td>'+esc(x.b.nome||"(sem nome)")+'</td>' +
+          '<td>'+esc(x.setor)+'</td>' +
+          '<td>'+esc(x.b.turno||"—")+'</td>' +
+          '<td><input type="date" data-basica-data="1" value="'+esc(dateToISOFromBR(t.data))+'"></td>' +
+          '<td><span class="tstatus tstatus-'+st.tone+'">'+esc(st.label)+'</span></td>' +
+          '<td><input type="text" data-obs="1" value="'+esc(x.b.observacoes||"")+'" placeholder="Observações..." style="min-width:160px"></td>' +
+          '</tr>';
+      });
+      h += '</tbody></table></div>';
+      return h;
+    }
+
+    var html = "";
+    if(chefeIds.length === 0 && semChefe.length === 0){
+      html = '<div class="card"><p class="hint" style="margin:0">Nenhum resultado para essa busca.</p></div>';
+    } else {
+      html += '<div class="card">';
+      chefeIds.forEach(function(chefeId){
+        var grupo = porChefe[chefeId];
+        var col = chefeColor(chefeId);
+        html += '<div class="chefe-group-header" style="background:'+col.bg+'22;border-left-color:'+col.border+';color:'+col.border+'"><strong>Chefe: '+esc(grupo.nome)+'</strong> <span class="hint" style="margin:0">('+grupo.itens.length+' brigadista'+(grupo.itens.length===1?"":"s")+')</span></div>';
+        html += tableFor(grupo.itens);
+      });
+      if(semChefe.length){
+        html += '<div class="chefe-group-header" style="background:#E5E7EB;border-left-color:#9CA3AF;color:#374151"><strong>Sem chefe definido</strong> <span class="hint" style="margin:0">('+semChefe.length+')</span></div>';
+        html += tableFor(semChefe);
+      }
+      html += '</div>';
+    }
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll('tr[data-bid]').forEach(function(tr){
+      var bid = tr.dataset.bid;
+      var dataInput = tr.querySelector('[data-basica-data]');
+      if(dataInput){
+        dataInput.addEventListener("change", function(e){
+          var found = findBrigadistaById(bid);
+          if(!found) return;
+          var iso = e.target.value;
+          found.treinamentos.basica.data = iso ? dateToBR(new Date(iso+"T00:00:00")) : "";
+          if(iso) found.treinamentos.basica.feito = true;
+          save(); renderBasica(); renderDashboard();
+        });
+      }
+      var obsInput = tr.querySelector('[data-obs]');
+      if(obsInput){
+        obsInput.addEventListener("input", function(e){
+          var found = findBrigadistaById(bid);
+          if(!found) return;
+          found.observacoes = e.target.value;
+          save();
+        });
+      }
+    });
+  }
+  document.getElementById("basicaSearch").addEventListener("input", function(e){ basicaSearch = e.target.value; renderBasica(); });
+  document.getElementById("printBasicaBtn").addEventListener("click", function(){ printTab("tab-basica"); });
+  document.getElementById("exportBasicaExcelBtn").addEventListener("click", function(){
+    if(typeof XLSX === "undefined"){ alert("A biblioteca de Excel não carregou — tente novamente."); return; }
+    var rows = [["Nome","Setor","Turno","Chefe","Data de conclusão","Status","Observações"]];
+    allBrigadistasReport().forEach(function(x){
+      var t = x.b.treinamentos.basica;
+      var st = statusTreino(t);
+      rows.push([x.b.nome||"", x.setor, x.b.turno||"", x.chefeNome||"(sem chefe)", t.data||"", st.label, x.b.observacoes||""]);
+    });
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "Treinamento Básico");
+    XLSX.writeFile(wb, "treinamento-basico.xlsx");
+  });
+
+  // ---------- INDICADOR DE FUNCIONALIDADE (CHAMADAS DE PRESENÇA) ----------
+  var indicadorSearch = "";
+  document.getElementById("indicadorSearch").addEventListener("input", function(e){ indicadorSearch = e.target.value; renderIndicador(); });
+  document.getElementById("printIndicadorBtn").addEventListener("click", function(){
+    document.getElementById("tab-indicador").classList.add("print-target");
+    window.print();
+    setTimeout(function(){ document.getElementById("tab-indicador").classList.remove("print-target"); }, 500);
+  });
+  document.getElementById("exportIndicadorExcelBtn").addEventListener("click", function(){
+    if(typeof XLSX === "undefined"){ alert("A biblioteca de Excel não carregou — tente novamente."); return; }
+    var all = allBrigadistasReport();
+    var wb = XLSX.utils.book_new();
+
+    var resumoRows = [["Nome","Setor","Chefe","Presenças","Total de chamadas","%"]];
+    all.forEach(function(x){
+      var count = state.chamadas.filter(function(ch){ return !!ch.presentes[x.b.id]; }).length;
+      var pct = state.chamadas.length ? Math.round((count/state.chamadas.length)*100) : 0;
+      resumoRows.push([x.b.nome||"", x.setor, x.chefeNome||"(sem chefe)", count, state.chamadas.length, pct+"%"]);
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumoRows), "Resumo por brigadista");
+
+    var detalheRows = [["Data","Título","Nome","Setor","Chefe","Presente"]];
+    state.chamadas.forEach(function(ch){
+      all.forEach(function(x){
+        detalheRows.push([ch.data, ch.titulo, x.b.nome||"", x.setor, x.chefeNome||"(sem chefe)", ch.presentes[x.b.id]?"Sim":"Não"]);
+      });
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detalheRows), "Detalhe por chamada");
+
+    XLSX.writeFile(wb, "indicador-funcionalidade.xlsx");
+  });
+
+  document.getElementById("addChamadaBtn").addEventListener("click", function(){
+    var dataInput = document.getElementById("chamadaData");
+    var tituloInput = document.getElementById("chamadaTitulo");
+    if(!dataInput.value){ alert("Escolha a data da chamada."); dataInput.focus(); return; }
+    var dataBR = dateToBR(new Date(dataInput.value+"T00:00:00"));
+    state.chamadas.push({id:uid(), data:dataBR, titulo:tituloInput.value.trim()||"Chamada", presentes:{}});
+    dataInput.value = ""; tituloInput.value = "";
+    save(); renderIndicador();
+  });
+
+  function renderIndicador(){
+    var wrap = document.getElementById("indicadorContent");
+    var all = allBrigadistasReport();
+    if(all.length === 0){
+      wrap.innerHTML = '<div class="card"><div class="empty">Cadastre brigadistas antes de registrar chamadas.</div></div>';
+      return;
+    }
+    var term = indicadorSearch.trim().toLowerCase();
+    var filteredAll = all.filter(function(x){
+      return !term || x.b.nome.toLowerCase().indexOf(term)>-1 || x.setor.toLowerCase().indexOf(term)>-1;
+    });
+    var html = "";
+
+    // resumo geral
+    var totalChamadas = state.chamadas.length;
+    var mediaGeral = 0;
+    if(totalChamadas){
+      var soma = 0;
+      state.chamadas.forEach(function(ch){
+        var presentes = all.filter(function(x){ return !!ch.presentes[x.b.id]; }).length;
+        soma += all.length ? presentes/all.length : 0;
+      });
+      mediaGeral = Math.round((soma/totalChamadas)*100);
+    }
+    html += '<div class="card"><h2>Resumo</h2><div class="dash-grid">';
+    html += '<div class="dash-card"><div class="num">'+totalChamadas+'</div><div class="lbl">Chamadas registradas</div></div>';
+    html += '<div class="dash-card"><div class="num">'+(totalChamadas?mediaGeral+"%":"—")+'</div><div class="lbl">Presença média geral</div></div>';
+    html += '</div>';
+
+    if(totalChamadas){
+      html += '<h3 style="margin-top:14px">Presença média por chefe</h3><div class="dash-grid">';
+      var porChefeIds = state.grupos.map(function(g){ return g.id; });
+      porChefeIds.forEach(function(gid){
+        var doChefe = all.filter(function(x){ return x.chefeId === gid; });
+        if(!doChefe.length) return;
+        var somaC = 0;
+        state.chamadas.forEach(function(ch){
+          var pres = doChefe.filter(function(x){ return !!ch.presentes[x.b.id]; }).length;
+          somaC += pres/doChefe.length;
+        });
+        var pctC = Math.round((somaC/totalChamadas)*100);
+        var col = chefeColor(gid);
+        html += '<div class="dash-card" style="border-left:4px solid '+col.border+'"><div class="num" style="color:'+col.border+'">'+pctC+'%</div><div class="lbl">'+esc(grupoLabel(gid))+'</div></div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+
+    // lista de chamadas
+    state.chamadas.slice().reverse().forEach(function(ch){
+      var presentesCount = all.filter(function(x){ return !!ch.presentes[x.b.id]; }).length;
+      var pct = all.length ? Math.round(presentesCount/all.length*100) : 0;
+      var tone = pct>=80 ? "ok" : (pct>=50 ? "warn" : "bad");
+      html += '<div class="card" data-chid="'+ch.id+'">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">';
+      html += '<h3 style="margin:0">'+esc(ch.titulo)+' — '+esc(ch.data)+' <span class="dash-pill dp-'+tone+'">'+presentesCount+'/'+all.length+' presentes ('+pct+'%)</span></h3>';
+      html += '<button class="btn-danger btn-sm" data-del-chamada>Remover chamada</button>';
+      html += '</div>';
+      html += '<div class="equipe-table-wrap" style="margin-top:10px"><table><thead><tr><th></th><th>Nome</th><th>Setor</th><th>Chefe</th></tr></thead><tbody>';
+      filteredAll.slice().sort(function(a,b){ return a.b.nome.localeCompare(b.b.nome); }).forEach(function(x){
+        html += '<tr data-bid="'+x.b.id+'"><td><input type="checkbox" data-presente="1" '+(ch.presentes[x.b.id]?"checked":"")+'></td>' +
+          '<td>'+esc(x.b.nome||"(sem nome)")+'</td><td>'+esc(x.setor)+'</td><td>'+esc(x.chefeNome||"—")+'</td></tr>';
+      });
+      html += '</tbody></table></div></div>';
+    });
+
+    // resumo por brigadista
+    if(totalChamadas){
+      html += '<div class="card"><h2>Presença por brigadista</h2><div class="table-wrap"><table><thead><tr><th>Nome</th><th>Setor</th><th>Presenças</th><th>%</th></tr></thead><tbody>';
+      filteredAll.slice().sort(function(a,b){ return a.b.nome.localeCompare(b.b.nome); }).forEach(function(x){
+        var count = state.chamadas.filter(function(ch){ return !!ch.presentes[x.b.id]; }).length;
+        var pctB = Math.round((count/totalChamadas)*100);
+        html += '<tr><td>'+esc(x.b.nome||"(sem nome)")+'</td><td>'+esc(x.setor)+'</td><td>'+count+'/'+totalChamadas+'</td><td>'+pctB+'%</td></tr>';
+      });
+      html += '</tbody></table></div></div>';
+    }
+
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll('[data-chid]').forEach(function(card){
+      var chid = card.dataset.chid;
+      var chamada = state.chamadas.find(function(c){ return c.id === chid; });
+      if(!chamada) return;
+      card.querySelectorAll('tr[data-bid]').forEach(function(tr){
+        var bid = tr.dataset.bid;
+        var chk = tr.querySelector('[data-presente]');
+        chk.addEventListener("change", function(e){
+          if(e.target.checked) chamada.presentes[bid] = true; else delete chamada.presentes[bid];
+          save(); renderIndicador();
+        });
+      });
+      var delBtn = card.querySelector('[data-del-chamada]');
+      if(delBtn){
+        delBtn.addEventListener("click", function(){
+          if(!confirm('Remover a chamada "'+chamada.titulo+'" de '+chamada.data+'?')) return;
+          state.chamadas = state.chamadas.filter(function(c){ return c.id !== chid; });
+          save(); renderIndicador();
+        });
+      }
+    });
+  }
+
+  function renderAll(){
+    coordEnabled.checked = !!state.coord.enabled;
+    coordNome.value = state.coord.nome || "";
+    coordNameWrap.style.display = state.coord.enabled ? "block" : "none";
+    validadeInput.value = state.validadeMeses || 12;
+    renderGrupos();
+    refreshSetorGrupoOptions();
+    renderSetores();
+    renderOrg();
+    renderComp();
+    renderControle();
+    renderDashboard();
+  }
+
+  load();
+  renderAll();
+  if(getCloudUrl()){ setCloudStatus("Carregando da nuvem..."); cloudPull(false); }
+  else { setCloudStatus("Nuvem desligada — salvando só neste dispositivo."); }
+})();
+</script>
+</body>
+</html>
