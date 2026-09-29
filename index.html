@@ -80,6 +80,7 @@ button{font-family:inherit;cursor:pointer;border-radius:7px;border:1px solid tra
 .status-tag{display:inline-block;font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:4px;margin-left:6px;vertical-align:middle;}
 .status-ativo{background:rgba(76,175,125,.18);color:var(--ok);}
 .status-afastamento{background:rgba(228,87,76,.18);color:var(--danger);}
+.status-inativo{background:var(--graphite-3);color:var(--ink-dim);}
 .treino-row{display:flex;align-items:center;gap:10px;background:var(--graphite-3);border:1px solid var(--line);border-radius:7px;padding:8px 10px;margin-bottom:6px;flex-wrap:wrap;}
 .treino-row .tname{flex:1 1 200px;font-size:13px;font-weight:600;}
 .treino-row .thoras{font-size:11px;color:var(--ink-dim);}
@@ -313,7 +314,7 @@ th{color:var(--amber);font-size:11px;text-transform:uppercase;letter-spacing:.03
   <section class="panel" id="tab-organograma">
     <div class="card">
       <h2>Organograma da brigada</h2>
-      <p class="hint">Mapa mental: coordenador → chefes → setores. Cada chefe tem uma cor própria. Setores sem chefe aparecem à parte, para corrigir.</p>
+      <p class="hint">Mapa mental: coordenador → chefes → setores. Cada chefe tem uma cor própria. Setores sem chefe aparecem à parte, para corrigir. Só entram aqui brigadistas <b>ativos ou afastados com a Brigada Básica concluída</b> — quem ainda não fez o básico, ou está marcado como inativo, fica de fora do mapa mas continua controlável nas outras abas (Treinamento Básico, Controle).</p>
       <label for="orgModeSelect">Visualizar por</label>
       <select id="orgModeSelect">
         <option value="chefe">Chefe → Setor → Brigadistas (padrão)</option>
@@ -879,8 +880,9 @@ th{color:var(--amber);font-size:11px;text-transform:uppercase;letter-spacing:.03
       '<div><label>Turno</label><input type="text" data-f="turno" value="'+esc(b.turno||"")+'" placeholder="Ex.: 1º Turno"></div>' +
       '<div><label>Equipe</label><input type="text" data-f="equipe" value="'+esc(b.equipe||"")+'"></div>' +
       '<div><label>Status</label><select data-f="status">' +
-        '<option value="Ativo"'+(b.status!=="Afastamento"?" selected":"")+'>Ativo</option>' +
+        '<option value="Ativo"'+(b.status!=="Afastamento"&&b.status!=="Inativo"?" selected":"")+'>Ativo</option>' +
         '<option value="Afastamento"'+(b.status==="Afastamento"?" selected":"")+'>Afastamento</option>' +
+        '<option value="Inativo"'+(b.status==="Inativo"?" selected":"")+'>Inativo</option>' +
       '</select></div>';
     item.appendChild(row2);
 
@@ -982,7 +984,7 @@ th{color:var(--amber);font-size:11px;text-transform:uppercase;letter-spacing:.03
     item.querySelector('[data-f="matricula"]').addEventListener("input", function(e){ b.matricula = e.target.value; save(); });
     item.querySelector('[data-f="turno"]').addEventListener("input", function(e){ b.turno = e.target.value; save(); });
     item.querySelector('[data-f="equipe"]').addEventListener("input", function(e){ b.equipe = e.target.value; save(); });
-    item.querySelector('[data-f="status"]').addEventListener("change", function(e){ b.status = e.target.value; save(); renderControle(); });
+    item.querySelector('[data-f="status"]').addEventListener("change", function(e){ b.status = e.target.value; save(); renderControle(); renderOrg(); renderDashboard(); });
     item.querySelector('[data-f="supervisor"]').addEventListener("input", function(e){ b.supervisor = e.target.value; save(); });
     item.querySelector('[data-f="emailSupervisor"]').addEventListener("input", function(e){ b.emailSupervisor = e.target.value; save(); });
     item.querySelector('[data-f="industriaAgro"]').addEventListener("change", function(e){ b.industriaAgro = e.target.value; save(); renderDashboard(); });
@@ -1044,7 +1046,6 @@ th{color:var(--amber);font-size:11px;text-transform:uppercase;letter-spacing:.03
     var html = "<thead><tr><th>Nome</th><th>Função</th><th>Turno</th><th>Setor (mover)</th><th>Status</th><th>Treinamentos</th><th></th></tr></thead><tbody>";
     filtered.forEach(function(x){
       var b = x.b, curSetor = x.setor;
-      var statusClass = b.status === "Afastamento" ? "status-afastamento" : "status-ativo";
       html +=
         '<tr data-bid="'+b.id+'" data-setorid="'+curSetor.id+'">' +
         '<td><input type="text" data-f="nome" value="'+esc(b.nome)+'"></td>' +
@@ -1054,7 +1055,11 @@ th{color:var(--amber);font-size:11px;text-transform:uppercase;letter-spacing:.03
             var glabel = grupoLabel(s.grupoId) || "sem chefe";
             return '<option value="'+s.id+'"'+(s.id===curSetor.id?" selected":"")+'>'+esc(s.nome)+' — '+esc(glabel)+'</option>';
           }).join("") + '</select></td>' +
-        '<td><span class="status-tag '+statusClass+'">'+esc(b.status||"Ativo")+'</span></td>' +
+        '<td><select data-f="status">' +
+          '<option value="Ativo"'+(b.status!=="Afastamento"&&b.status!=="Inativo"?" selected":"")+'>Ativo</option>' +
+          '<option value="Afastamento"'+(b.status==="Afastamento"?" selected":"")+'>Afastamento</option>' +
+          '<option value="Inativo"'+(b.status==="Inativo"?" selected":"")+'>Inativo</option>' +
+        '</select></td>' +
         '<td><div class="comp-cell">' + TREINAMENTOS.map(function(tr){
             return '<button type="button" data-comp="'+tr.id+'" class="'+(b.treinamentos[tr.id].feito?"on":"")+'" title="'+esc(tr.label)+'">'+tr.label.split(" ")[0].slice(0,4).toUpperCase()+'</button>';
           }).join("") + '</div></td>' +
@@ -1072,6 +1077,7 @@ th{color:var(--amber);font-size:11px;text-transform:uppercase;letter-spacing:.03
       tr.querySelector('[data-f="nome"]').addEventListener("input", function(e){ brigObj.nome = e.target.value; save(); });
       tr.querySelector('[data-f="funcao"]').addEventListener("input", function(e){ brigObj.funcao = e.target.value; save(); });
       tr.querySelector('[data-f="turno"]').addEventListener("input", function(e){ brigObj.turno = e.target.value; save(); });
+      tr.querySelector('[data-f="status"]').addEventListener("change", function(e){ brigObj.status = e.target.value; save(); renderOrg(); renderDashboard(); });
       tr.querySelector('[data-f="mover"]').addEventListener("change", function(e){
         var destId = e.target.value;
         if(destId === setorId) return;
@@ -1102,9 +1108,14 @@ th{color:var(--amber);font-size:11px;text-transform:uppercase;letter-spacing:.03
 
   function truncateLabel(s, n){ s = s||""; return s.length>n ? (s.slice(0,n-1)+"…") : s; }
 
+  function qualificaOrganograma(b){
+    return b.status !== "Inativo" && !!(b.treinamentos && b.treinamentos.basica && b.treinamentos.basica.feito);
+  }
+
   function makeSetorNode(s, expandNames, allBrig){
-    var brigsAqui = allBrig ? s.brigadistas.slice() : s.brigadistas.filter(function(b){ return !b.chefeOverrideId || b.chefeOverrideId === s.grupoId; });
-    var liders = s.brigadistas.filter(function(b){ return b.isLiderSetor; }).map(function(b){ return b.nome||"(sem nome)"; });
+    var brigsAqui = (allBrig ? s.brigadistas.slice() : s.brigadistas.filter(function(b){ return !b.chefeOverrideId || b.chefeOverrideId === s.grupoId; }))
+      .filter(qualificaOrganograma);
+    var liders = s.brigadistas.filter(function(b){ return b.isLiderSetor && qualificaOrganograma(b); }).map(function(b){ return b.nome||"(sem nome)"; });
     var subParts = [];
     if(liders.length) subParts.push("Líder: "+liders.join(", "));
     var namesList = expandNames ? brigsAqui.map(function(b){
@@ -1131,7 +1142,7 @@ th{color:var(--amber);font-size:11px;text-transform:uppercase;letter-spacing:.03
     });
     state.setores.forEach(function(s){
       s.brigadistas.forEach(function(b){
-        if(b.chefeOverrideId && b.chefeOverrideId !== s.grupoId && chefeById[b.chefeOverrideId]){
+        if(b.chefeOverrideId && b.chefeOverrideId !== s.grupoId && chefeById[b.chefeOverrideId] && qualificaOrganograma(b)){
           chefeById[b.chefeOverrideId].children.push({
             label:b.nome||"(sem nome)", sub:"Setor: "+s.nome+" (outro turno)"+(b.isLiderSetor?" · Líder":""),
             kind:"overrideBrig", chefeId:b.chefeOverrideId, w:210, h:48, children:[]
@@ -1578,8 +1589,11 @@ th{color:var(--amber);font-size:11px;text-transform:uppercase;letter-spacing:.03
     document.getElementById("dashValidadeTxt").textContent = (state.validadeMeses||12)+" meses";
 
     var geral = document.getElementById("dashGeral");
-    var ativos = all.filter(function(b){ return b.status!=="Afastamento"; }).length;
-    var afastados = all.length - ativos;
+    var ativos = all.filter(function(b){ return b.status!=="Afastamento" && b.status!=="Inativo"; }).length;
+    var afastados = all.filter(function(b){ return b.status==="Afastamento"; }).length;
+    var inativos = all.filter(function(b){ return b.status==="Inativo"; }).length;
+    var noOrganograma = all.filter(qualificaOrganograma).length;
+    var pendentes = all.length - noOrganograma;
     var ind = all.filter(function(b){ return b.industriaAgro==="IND"; }).length;
     var agro = all.filter(function(b){ return b.industriaAgro==="AGRO"; }).length;
     var semChefeCount = state.setores.filter(function(s){ return !s.grupoId; }).length;
@@ -1587,7 +1601,8 @@ th{color:var(--amber);font-size:11px;text-transform:uppercase;letter-spacing:.03
       '<div class="dash-card"><div class="num">'+all.length+'</div><div class="lbl">Brigadistas cadastrados</div></div>' +
       '<div class="dash-card"><div class="num">'+state.setores.length+'</div><div class="lbl">Setores</div></div>' +
       '<div class="dash-card"><div class="num">'+state.grupos.length+'</div><div class="lbl">Chefes</div></div>' +
-      '<div class="dash-card"><div class="num">'+ativos+'</div><div class="lbl">Ativos <span class="dash-pill dp-bad" style="display:'+(afastados?"inline-block":"none")+'">'+afastados+' afastado(s)</span></div></div>' +
+      '<div class="dash-card"><div class="num">'+ativos+'</div><div class="lbl">Ativos <span class="dash-pill dp-bad" style="display:'+(afastados?"inline-block":"none")+'">'+afastados+' afastado(s)</span> <span class="dash-pill dp-none" style="display:'+(inativos?"inline-block":"none")+'">'+inativos+' inativo(s)</span></div></div>' +
+      '<div class="dash-card"><div class="num">'+noOrganograma+'</div><div class="lbl">No organograma <span class="dash-pill dp-warn" style="display:'+(pendentes?"inline-block":"none")+'">'+pendentes+' pendente(s) de básica</span></div></div>' +
       '<div class="dash-card"><div class="num">'+semChefeCount+'</div><div class="lbl">Setores sem chefe</div></div>' +
       '<div class="dash-card"><div class="num">'+ind+' / '+agro+'</div><div class="lbl">Indústria / Agro</div></div>';
 
