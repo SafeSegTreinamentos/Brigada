@@ -314,7 +314,7 @@ th{color:var(--amber);font-size:11px;text-transform:uppercase;letter-spacing:.03
   <section class="panel" id="tab-organograma">
     <div class="card">
       <h2>Organograma da brigada</h2>
-      <p class="hint">Mapa mental: coordenador → chefes → setores. Cada chefe tem uma cor própria. Setores sem chefe aparecem à parte, para corrigir. Só entram aqui brigadistas <b>ativos ou afastados com a Brigada Básica concluída</b> — quem ainda não fez o básico, ou está marcado como inativo, fica de fora do mapa mas continua controlável nas outras abas (Treinamento Básico, Controle).</p>
+      <p class="hint">Mapa mental: coordenador → chefes → setores. Cada chefe tem uma cor própria. Setores sem chefe aparecem à parte, para corrigir. Só entram aqui brigadistas <b>não inativos com os 4 treinamentos complementares completos</b> (Altura, Espaço Confinado, Produtos Químicos e SCI) — quem tem só a básica, ou está com complementar pendente, fica de fora do mapa mas continua controlável nas outras abas (Treinamento Básico, Cursos Especialistas, Controle).</p>
       <label for="orgModeSelect">Visualizar por</label>
       <select id="orgModeSelect">
         <option value="chefe">Chefe → Setor → Brigadistas (padrão)</option>
@@ -339,6 +339,15 @@ th{color:var(--amber);font-size:11px;text-transform:uppercase;letter-spacing:.03
       </div>
     </div>
     <div class="card"><div class="org-wrap" id="orgWrap"></div></div>
+
+    <div class="card">
+      <h2>Lista por chefe (Excel)</h2>
+      <p class="hint">Gera uma planilha com uma aba separada para cada chefe. Escolha entre a lista completa (todo mundo) ou só quem já tem os 4 complementares completos (os que aparecem no organograma).</p>
+      <div class="actions">
+        <button class="btn-ghost" id="exportChefeTodosBtn">⇩ Lista completa por chefe (.xlsx)</button>
+        <button class="btn-amber" id="exportChefeCompletosBtn">⇩ Só complementar completo, por chefe (.xlsx)</button>
+      </div>
+    </div>
   </section>
 
   <!-- TAB CURSOS -->
@@ -1109,7 +1118,10 @@ th{color:var(--amber);font-size:11px;text-transform:uppercase;letter-spacing:.03
   function truncateLabel(s, n){ s = s||""; return s.length>n ? (s.slice(0,n-1)+"…") : s; }
 
   function qualificaOrganograma(b){
-    return b.status !== "Inativo" && !!(b.treinamentos && b.treinamentos.basica && b.treinamentos.basica.feito);
+    if(b.status === "Inativo") return false;
+    if(!b.treinamentos) return false;
+    return TREINAMENTOS.filter(function(tr){ return tr.id !== "basica"; })
+      .every(function(tr){ return b.treinamentos[tr.id] && b.treinamentos[tr.id].feito; });
   }
 
   function makeSetorNode(s, expandNames, allBrig){
@@ -1486,6 +1498,58 @@ th{color:var(--amber);font-size:11px;text-transform:uppercase;letter-spacing:.03
     });
   });
 
+  // ---------- LISTA POR CHEFE (EXCEL, uma aba por chefe) ----------
+  function sanitizeSheetName(name, usados){
+    var s = (name||"Chefe").replace(/[\\\/\?\*\[\]:]/g, "-").trim().slice(0, 28) || "Chefe";
+    var base = s, i = 2;
+    while(usados[s]){ s = (base.slice(0, 25) + " (" + i + ")"); i++; }
+    usados[s] = true;
+    return s;
+  }
+  function linhaBrigadista(x){
+    var t = x.b.treinamentos;
+    return [
+      x.b.nome||"", x.b.funcao||"", x.setor, x.b.turno||"", x.b.status||"Ativo",
+      t.basica.feito?"Sim":"Não", t.altura.feito?"Sim":"Não", t.confinado.feito?"Sim":"Não",
+      t.quimicos.feito?"Sim":"Não", t.sci.feito?"Sim":"Não"
+    ];
+  }
+  function gerarListaPorChefe(somenteCompletos){
+    if(typeof XLSX === "undefined"){ alert("A biblioteca de Excel não carregou — tente novamente."); return; }
+    var all = allBrigadistasReport();
+    if(all.length === 0){ alert("Cadastre brigadistas primeiro."); return; }
+    if(somenteCompletos) all = all.filter(function(x){ return qualificaOrganograma(x.b); });
+
+    var cabecalho = ["Nome","Função","Setor","Turno","Status","Básica","Altura","Esp. Confinado","Prod. Químicos","SCI"];
+    var wb = XLSX.utils.book_new();
+    var usados = {};
+
+    state.grupos.forEach(function(g){
+      var doChefe = all.filter(function(x){ return x.chefeId === g.id; });
+      var rows = [cabecalho].concat(doChefe.map(linhaBrigadista));
+      var ws = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = [{wch:26},{wch:20},{wch:22},{wch:10},{wch:12},{wch:8},{wch:8},{wch:14},{wch:14},{wch:8}];
+      XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName(g.nome, usados));
+    });
+
+    var semChefe = all.filter(function(x){ return x.semChefe; });
+    if(semChefe.length){
+      var rowsSc = [cabecalho].concat(semChefe.map(linhaBrigadista));
+      var wsSc = XLSX.utils.aoa_to_sheet(rowsSc);
+      wsSc['!cols'] = [{wch:26},{wch:20},{wch:22},{wch:10},{wch:12},{wch:8},{wch:8},{wch:14},{wch:14},{wch:8}];
+      XLSX.utils.book_append_sheet(wb, wsSc, sanitizeSheetName("Sem chefe", usados));
+    }
+
+    if(wb.SheetNames.length === 0){
+      alert(somenteCompletos ? "Nenhum brigadista com os 4 complementares completos ainda." : "Nenhum brigadista para listar.");
+      return;
+    }
+
+    XLSX.writeFile(wb, somenteCompletos ? "lista-por-chefe-complementar-completo.xlsx" : "lista-por-chefe-todos.xlsx");
+  }
+  document.getElementById("exportChefeTodosBtn").addEventListener("click", function(){ gerarListaPorChefe(false); });
+  document.getElementById("exportChefeCompletosBtn").addEventListener("click", function(){ gerarListaPorChefe(true); });
+
   // ---------- CURSOS ESPECIALISTAS (relatório) ----------
   function allBrigadistasReport(){
     var list = [];
@@ -1602,7 +1666,7 @@ th{color:var(--amber);font-size:11px;text-transform:uppercase;letter-spacing:.03
       '<div class="dash-card"><div class="num">'+state.setores.length+'</div><div class="lbl">Setores</div></div>' +
       '<div class="dash-card"><div class="num">'+state.grupos.length+'</div><div class="lbl">Chefes</div></div>' +
       '<div class="dash-card"><div class="num">'+ativos+'</div><div class="lbl">Ativos <span class="dash-pill dp-bad" style="display:'+(afastados?"inline-block":"none")+'">'+afastados+' afastado(s)</span> <span class="dash-pill dp-none" style="display:'+(inativos?"inline-block":"none")+'">'+inativos+' inativo(s)</span></div></div>' +
-      '<div class="dash-card"><div class="num">'+noOrganograma+'</div><div class="lbl">No organograma <span class="dash-pill dp-warn" style="display:'+(pendentes?"inline-block":"none")+'">'+pendentes+' pendente(s) de básica</span></div></div>' +
+      '<div class="dash-card"><div class="num">'+noOrganograma+'</div><div class="lbl">No organograma <span class="dash-pill dp-warn" style="display:'+(pendentes?"inline-block":"none")+'">'+pendentes+' sem complementar completo</span></div></div>' +
       '<div class="dash-card"><div class="num">'+semChefeCount+'</div><div class="lbl">Setores sem chefe</div></div>' +
       '<div class="dash-card"><div class="num">'+ind+' / '+agro+'</div><div class="lbl">Indústria / Agro</div></div>';
 
